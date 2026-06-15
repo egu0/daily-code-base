@@ -1,0 +1,88 @@
+workspace = { exclude = ["02/profile-demo", "02/workspace-demo", "03/my-box", "03/thread-demo", "03/oop-demo", "03/pattern-match-demo", "04/enhanced-rust-demo", "04/web-server"], members = ["02/adder", "02/closure-demo", "02/iterator-demo", "02/minigrep"] }
+
+[package]
+name = "rust-practices"
+version = "0.1.0"
+edition = "2021"
+# default binary to run when using `cargo run`
+default-run = "rust-practices"
+
+[[bin]]
+name = "main_use_mod"
+path = "src/main_use_mod.rs"
+
+[[bin]]
+name = "main_binary_tree"
+path = "src/main_binary_tree.rs"
+
+#---------------------- algo ----------------------------
+
+[[bin]]
+name = "a01_2sum"
+path = "src/algo/a01_2sum.rs"
+
+[[bin]]
+name = "a02_number"
+path = "src/algo/a02_number.rs"
+
+[[bin]]
+name = "a03_string"
+path = "src/algo/a03_string.rs"
+
+[[bin]]
+name = "a04_list_p21_generic"
+path = "src/algo/list/a04_list_p21_generic.rs"
+
+[[bin]]
+name = "a04_list_p21_i32"
+path = "src/algo/list/a04_list_p21_i32.rs"
+
+[[bin]]
+name = "a05_array"
+path = "src/algo/a05_array.rs"
+
+[[bin]]
+name = "a06_math"
+path = "src/algo/a06_math.rs"
+
+[[bin]]
+name = "a07_dp"
+path = "src/algo/a07_dp.rs"
+
+[[bin]]
+name = "a04_list_p83"
+path = "src/algo/list/a04_list_p83.rs"
+
+[[bin]]
+name = "a08_tree_p94"
+path = "src/algo/tree/a08_tree_p94.rs"
+
+[[bin]]
+name = "a08_tree_p100"
+path = "src/algo/tree/a08_tree_p100.rs"
+
+[[bin]]
+name = "a08_tree_p101"
+path = "src/algo/tree/a08_tree_p101.rs"
+
+[[bin]]
+name = "p108"
+path = "src/algo/tree/p108.rs"
+
+[[bin]]
+name = "p110"
+path = "src/algo/tree/p110.rs"
+
+[[bin]]
+name = "p111"
+path = "src/algo/tree/p111.rs"
+
+[[bin]]
+name = "p112"
+path = "src/algo/tree/p112.rs"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+chrono = "0.4"
+rand = "0.7.0"
