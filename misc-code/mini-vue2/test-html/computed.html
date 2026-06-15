@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <div id="app">
+        <p>{{fullName}}</p>
+        <p>{{age}}</p>
+    </div>
+    <script src="/node_modules/vue/dist/vue.js"></script>
+    <script>
+        let vm = new Vue({
+            el: '#app',
+            data: {
+                name: 'eugene',
+                birthYear: 2006
+            },
+            computed: {
+                //方式一
+                fullName() {
+                    return this.name + ' guo'
+                },
+
+                //方式二
+                age: {
+                    // 读取 computed 属性：console.log(vm.age)
+                    get() {
+                        console.log('get age')
+                        return 2024 - this.birthYear
+                    },
+
+                    // 设置 computed 属性：vm.age = 12  ==>  val = 12
+                    set(val) {
+                        console.log('set age', val)
+                    }
+                }
+            }
+        })
+
+        console.log(vm)
+
+        setTimeout(() => {
+            vm.name = 'egu0'
+
+            //改变 birthYear 会连带改变 age 和重新渲染模板
+            vm.birthYear = 2005
+        }, 1000)
+
+        setTimeout(() => {
+            //直接为计算属性赋值，会调用 computedAttr.set 方法
+            vm.age = 199
+        }, 2000)
+
+    </script>
+</body>
+
+</html>

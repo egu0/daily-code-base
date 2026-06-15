@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <div id="app">{{name}}</div>
+    <script src="/node_modules/vue/dist/vue.js"></script>
+    <script>
+        let vm = new Vue({
+            el: '#app',
+            data: {
+                name: 'eugene'
+            },
+            methods: {
+                name_watch_fn: (newVal, oldVal) => {
+                    console.log(oldVal, '->', newVal)
+                }
+            },
+            watch: {
+                //1.
+                'name'(newVal, oldVal) {
+                    console.log(oldVal, '->', newVal)
+                }
+
+                //2.
+                // 'name': [
+                //     (newVal, oldVal) => {
+                //         console.log('1', oldVal, '->', newVal)
+                //     },
+                //     (newVal, oldVal) => {
+                //         console.log('2', oldVal, '->', newVal)
+                //     }
+                // ]
+
+                //3.
+                // 'name': {
+                //     handler(newVal, oldVal) {
+                //         console.log(oldVal, '->', newVal)
+                //     }
+                // }
+
+                //4.
+                // 'name': 'name_watch_fn'
+            }
+        })
+
+        console.log(vm)
+
+        //查看两个 Watcher。其中 user 字段表示
+        /*
+0: Watcher {vm: Vue, deep: false, user: true, lazy: false, sync: false, …}
+1: Watcher {vm: Vue, deep: false, user: false, lazy: false, sync: false, …}
+length: 2
+[[Prototype]]: Array(0)
+        */
+        console.log(vm._watcher.deps[0].subs)
+
+        setTimeout(() => {
+            vm.name = 'egu0'
+        }, 500)
+
+    </script>
+</body>
+
+</html>

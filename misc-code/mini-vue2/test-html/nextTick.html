@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <div id="app">{{name}}<br />
+    </div>
+
+    <script src="/node_modules/vue/dist/vue.js"></script>
+    <script>
+        let vm = new Vue({
+            el: '#app',
+            data() {
+                return {
+                    name: 'one',
+                }
+            }
+        })
+
+        console.log('vm:', vm)
+
+        setTimeout(() => {
+            vm.name = 'two'
+
+            // one -> two -> three
+            // setTimeout(() => {
+            //     for (let i = 0; i < 1000_000; i++) {
+            //         vm.name = 'three'
+            //     }
+            // }, 0)
+
+            // one -> three
+            vm.$nextTick(() => {
+                for (let i = 0; i < 1000_000; i++) {
+                    vm.name = 'three'
+                }
+            })
+        }, 1000)
+
+        /*
+       setTimeout:
+        1.Vue updated the vDOM to say "Two"
+        2.Vue gave control to the browser
+        3.The browser displayed "Two"
+        4.Callback was called
+        5.Vue updated the vDOM to say "Three"
+        6.Vue gave control to the browser
+        7.The browser displayed "Three" 
+
+        vm.$nextTick:
+        1.Vue updated the vDOM to say "Two"
+        //2.Vue gave control to the browser
+        //3.The browser displayed "Two"
+        2.Callback was called
+        3.Vue updated the vDOM to say "Three"
+        4.Vue gave control to the browser
+        5.The browser displayed "Three" 
+        */
+    </script>
+
+</body>
+
+</html>

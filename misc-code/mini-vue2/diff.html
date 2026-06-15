@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <div id="app">
+        <p>你好</p>
+        <p>{{name}}</p>
+    </div>
+</body>
+
+<script src="dist/vue.js"></script>
+<script>
+    let vm = new Vue({
+        el: "#app",
+        data() {
+            return {
+                name: 'monica',
+            }
+        },
+    })
+
+    console.log('vm', vm)
+
+    setTimeout(() => {
+        vm.name = 'eguene'
+    }, 2000)
+</script>
+
+</html>

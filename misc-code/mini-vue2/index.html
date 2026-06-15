@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+
+    <div id="app" class="box" style="color: red; margin-top: 30px;"> hello, {{ msg}}, {{greeting }}
+        <h1>are you good? </h1> {{ msg }}
+        <h2>{{detail.desc}}</h2>
+        {{friends}}
+    </div>
+
+</body>
+
+<script src="dist/vue.js"></script>
+<script>
+    //全局选项
+    Vue.Mixin({
+        created: function a() {
+            console.log('created - 1')
+        }
+    })
+    Vue.Mixin({
+        created() {
+            console.log('created - 2')
+        }
+    })
+    let vm = new Vue({
+        el: "#app",
+        data() {
+            return {
+                msg: 'monica',
+                greeting: 'how are you?',
+                detail: {
+                    desc: 'a good guy, 14cm',
+                    in_love: false
+                },
+                scores: [80, 74, 90],
+                friends: [{ name: 'jissica', age: 17 }, [{ name: 'kelly', age: 11 }]],
+                stu: {
+                    name: 'jackson',
+                    detail: {
+                        hometown: 'new jersey',
+                        status: 'normal'
+                    }
+                }
+            }
+        },
+        created() {
+            console.log('created - 0')
+        },
+        updated() {
+            console.log('updated')
+        },
+        methods: {
+            watch_fn: (newVal, oldVal) => {
+                console.log(oldVal, '->', newVal)
+            }
+        },
+        watch: {
+            // 'stu.detail.status'(newVal, oldVal) {
+            //     console.log(oldVal, '->', newVal)
+            // }
+            'stu.detail.status': {
+                handler(newVal, oldVal) {
+                    console.log(oldVal, '->', newVal)
+                },
+                // immediate: true
+            }
+        }
+    })
+
+    // console.log(vm._data)
+    // vm._data.msg = 'hiii'
+    // vm._data.detail = {
+    //     weight: 170,
+    //     has_car: false
+    // }
+    // vm._data.friends.push({ name: 'kris', age: 20 })
+    //
+    // console.log(vm.msg)
+    // vm.msg = 'Hi!'
+
+    console.log('vm', vm)
+
+    // setTimeout(() => {
+    //     vm.msg = 'eugene'
+    //     vm.friends.push({ name: 'lenord' })
+    //     vm.friends.push({ name: 'mary' })
+    //
+    //     vm.$nextTick(() => {
+    //         console.log('nextTick:', vm.$el.innerHTML)
+    //     })
+    // }, 1000)
+
+    setTimeout(() => {
+        // vm.msg = 'eguene'
+        vm.stu.detail.status = 'graduated'
+    }, 500)
+</script>
+
+<script>
+
+    // function Person(id) {
+    //     this.id = id
+
+    //     //1. 在类中定义方法：每个实例都会拥有一个方法副本，内存效率低
+    //     this.hi = function () {
+    //         console.log('hi, this:', this);
+    //     }
+    //     this.hi_arrow = () => {
+    //         console.log('hi arrow, this:', this);//Object { id: 1, hi: hi(), hi_arrow: hi_arrow() }
+    //     }
+    // }
+
+    // //2. 为 Person 类的原型对象添加方法，所有实例都会共享此方法，节省内存
+    // Person.prototype._init = function () {
+    //     console.log('_init, this:', this);
+    // }
+    // Person.prototype._init_arrow = () => {
+    //     console.log('_init_arrow, this:', this);
+    // }
+
+    // //-----------------------------------
+
+    // let person = new Person(1);
+    // console.log(person);//Object { id: 1, hi: hi(), hi_arrow: hi_arrow() }
+
+    // //实例的普通方法
+    // person.hi();//this => Object { id: 1, hi: hi(), hi_arrow: hi_arrow() }
+    // console.log(new Person().hi === new Person().hi);//false
+    // //实例的箭头方法
+    // person.hi_arrow();//this => Object { id: 1, hi: hi(), hi_arrow: hi_arrow() }
+    // console.log(new Person().hi_arrow === new Person().hi_arrow);//false
+
+    // //原型链
+    // console.log(Person.prototype === new Person().__proto__);
+    // console.log(new Person().__proto__ === new Person().__proto__);
+    // console.log(Person);
+    // console.log(Person.prototype);//Object { _init: _init(), _init_arrow: _init_arrow(), … }
+    // console.log(Person.prototype.__proto__); //Person 原型 的原型：Object { … }
+    // console.log(Person.prototype.__proto__.__proto__); //Person 原型 的原型 的原型：null
+
+    // //原型对象的普通方法
+    // person._init();// this 是 person 对象
+    // person.__proto__._init();// this 是 Person 原型
+    // Person.prototype._init();// this 是 Person 原型
+    // //原型对象的箭头方法
+    // person._init_arrow();// this 是 Window 对象
+    // person.__proto__._init_arrow();// this 是 Window 对象
+    // Person.prototype._init_arrow();// this 是 Window 对象
+
+</script>
+
+</html>

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <div id="app">
+        <my-button></my-button>
+        <my-button></my-button>
+        {{msg}}
+        <my-button></my-button>
+    </div>
+</body>
+
+<script src="dist/vue.js"></script>
+<script>
+    //通过 Vue.component 全局注册组件
+    Vue.component('my-button', {
+        template: `<button>我的全局按钮</button>`
+    })
+
+    let vm = new Vue({
+        el: "#app",
+        data() {
+            return {
+                msg: 'monica',
+            }
+        },
+
+        //在 options.components 字段局部注册组件。优先级比同名全局组件高
+        components: {
+            'my-button': {
+                template: `<button>我的局部按钮</button>`
+            }
+        }
+    })
+
+    console.log('vm', vm)
+</script>
+
+</html>
