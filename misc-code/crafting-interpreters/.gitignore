@@ -1,0 +1,8 @@
+.vscode/
+.idea/
+target/
+
+test.lox
+
+*.lox
+.DS_Store

@@ -1,0 +1,2 @@
+- [Crafting Interpreters](https://craftinginterpreters.com/contents.html)
+- [munificent/craftinginterpreters](https://github.com/munificent/craftinginterpreters)
