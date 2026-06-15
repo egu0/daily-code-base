@@ -1,0 +1,6 @@
+out/
+practice_algo.iml
+.idea/
+/bin/
+.DS_Store
+target/
