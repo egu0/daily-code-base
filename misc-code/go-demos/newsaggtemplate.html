@@ -1,0 +1,29 @@
+<head>
+    <link rel="stylesheet" href="//cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css"/>
+    <script src="https://code.jquery.com/jquery-3.7.1.slim.js"
+            integrity="sha256-UgvvN8vBkgO0luPSUl2s8TIlOSYRoGFAX4jlCIm9Adc=" crossorigin="anonymous"></script>
+    <script src="//cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+</head>
+
+<h1>{{ .Title }}</h1>
+
+<table id="myTable">
+    <thead>
+    <th>Title</th>
+    <th>Description</th>
+    </thead>
+    <tbody>
+    {{ range $key, $value := .NewsInfo }}
+    <tr>
+        <td><a target="_blank" href="{{ $value.Link }}">{{ $key }}</a></td>
+        <td>{{ $value.Description }}</td>
+    </tr>
+    {{ end }}
+    </tbody>
+</table>
+
+<script>
+    $(document).ready(function () {
+        let table = new DataTable('#myTable')
+    })
+</script>
