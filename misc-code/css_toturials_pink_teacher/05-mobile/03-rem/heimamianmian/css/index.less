@@ -1,0 +1,223 @@
+a {
+  text-decoration: none;
+  color: #707070;
+}
+
+body {
+  min-width: 320px;
+  max-width: 750px;
+  margin: 0 auto;
+  background-color: #f2f4f7;
+}
+
+// "cssrem.rootFontSize": 37.5
+// 当屏幕宽度大于 750px 时，将 html 元素的字体大小设为固定值
+@media screen and (min-width: 750px) {
+  html {
+    font-size: 37.5px !important;
+  }
+}
+
+.wrap {
+  background-color: #fff;
+  padding-bottom: 1.1467rem;
+}
+
+// 头部区域
+.header {
+  height: 2.1333rem;
+  line-height: 2.1333rem;
+  border-bottom: 1px solid #eaeaea;
+  text-align: center;
+  font-size: 0.9333rem;
+  color: #1c1c1c;
+}
+
+// 导航区
+
+.nav {
+  display: flex;
+  flex-wrap: wrap;
+  padding: 1.2rem 0 1.6rem 0;
+  .item {
+    display: flex;
+    width: 33.33%;
+    flex-direction: column;
+    align-items: center;
+    img {
+      width: 3.7066rem;
+      height: 3.7066rem;
+    }
+    span {
+      font-size: 0.6667rem;
+    }
+    // 给前三个加 marigin-bottom
+    &:nth-child(-n + 3) {
+      margin-bottom: 1.6533rem;
+    }
+  }
+}
+
+// go 区域
+.go {
+  margin: 0 0.2667rem 0 0.48rem;
+  img {
+    width: 100%;
+  }
+}
+
+// 就业指导模块
+
+.content {
+  padding: 1.0667rem 0.64rem;
+  margin-top: 0.2667rem;
+  background-color: #fff;
+  .content-hd {
+    height: 1.0133rem;
+    line-height: 1.0133rem;
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.9067rem;
+    h4 {
+      margin: 0;
+      font-size: 0.7467rem;
+      color: #333;
+      .icon {
+        display: inline-block;
+        width: 1.0133rem;
+        height: 1.0133rem;
+      }
+      img {
+        width: 100%;
+        height: 100%;
+        // 图片和文字居中对齐方式
+        vertical-align: top;
+      }
+    }
+    .more {
+      font-size: 0.5867rem;
+      color: #999;
+    }
+  }
+}
+
+.get_job_focus {
+  // 定位两个箭头
+  position: relative;
+  .swiper-container {
+    width: 14.4rem;
+    height: 100%;
+  }
+  .swiper-slide {
+    text-align: center;
+    font-size: 18px;
+    background: #fff;
+
+    /* Center slide text vertically */
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: -webkit-flex;
+    display: flex;
+    // 将 .swiper-slide 中的元素按照 y 轴排列
+    flex-direction: column;
+    -webkit-box-pack: center;
+    -ms-flex-pack: center;
+    -webkit-justify-content: center;
+    justify-content: center;
+    -webkit-box-align: center;
+    -ms-flex-align: center;
+    -webkit-align-items: center;
+    align-items: center;
+    transition: 300ms;
+    transform: scale(0.8);
+    opacity: 0.6;
+    a {
+      width: 9.0133rem;
+      height: 10.0267rem;
+      img {
+        width: 100%;
+        height: 100%;
+      }
+    }
+    p {
+      width: 9.0133rem;
+      font-size: 0.6667rem;
+      margin-top: 0.64rem;
+      color: #333;
+    }
+  }
+  .swiper-slide-active,
+  .swiper-slide-duplicate-active {
+    transform: scale(1);
+    z-index: 888;
+    opacity: 1;
+  }
+  .swiper-button-next:after,
+  .swiper-button-prev:after {
+    color: #070907;
+  }
+}
+
+// 充电学习轮播图
+.study_con {
+  padding-bottom: 4.8rem;
+}
+.study {
+  .study_fo {
+    padding: 0.2667rem;
+  }
+  .swiper-slide {
+    font-size: 18px;
+    width: 7.7333rem;
+    height: 9.0667rem;
+    background-color: #fff;
+    border-radius: 0.2667rem;
+    box-shadow: 0 0 0.2667rem rgba(0, 0, 0, 0.1);
+    img {
+      width: 100%;
+    }
+    h5 {
+      margin: 0;
+      font-size: 0.7467rem;
+      font-weight: 400;
+      margin: 0.5333rem 0;
+      padding: 0 0.2667rem;
+    }
+    p {
+      color: #ff4400;
+      font-size: 0.6933rem;
+      padding: 0 0.2667rem;
+    }
+  }
+}
+
+// 底部区域
+
+.footer {
+  display: flex;
+  width: 100%;
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  background-color: #fff;
+  height: 2.9333rem;
+  z-index: 999;
+  padding: 0.5067rem;
+  border-top: 0.0267rem solid #ccc;
+  .item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    img {
+      margin-top: 0.5333rem;
+      width: 1.04rem;
+      height: 1.0933rem;
+    }
+    p {
+      font-size: 0.5867rem;
+      color: #52c4f0;
+      margin-top: 0.5333rem;
+    }
+  }
+}

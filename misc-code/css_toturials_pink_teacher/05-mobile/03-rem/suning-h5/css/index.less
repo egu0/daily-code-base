@@ -1,0 +1,107 @@
+//引入 common.css 到 index.css
+@import 'common';
+
+body {
+  min-width: 320px;
+  margin: 0 auto;
+  // 15 份
+  width: 15rem;
+  line-height: 1.5;
+  font-family: Arial, Helvetica;
+  background-color: #f2f2f2;
+}
+
+@baseFont: 50;
+
+// 顶部搜索框
+
+.search-content {
+  display: flex;
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 15rem;
+  height: (88rem / 50);
+  background-color: #ffc001;
+  .classify {
+    // w44px, h70px
+    width: (44rem / @baseFont);
+    height: (70rem / @baseFont);
+    background: url(../images/classify.png) no-repeat;
+    background-size: (44rem / @baseFont) (70rem / @baseFont);
+    margin: (11rem / @baseFont) (25rem / @baseFont) (7rem / @baseFont)
+      (24rem / @baseFont);
+  }
+  .search {
+    flex: 1;
+    // background-color: purple;
+    input {
+      outline: none;
+      width: 100%;
+      height: (66rem / @baseFont);
+      border-radius: (33rem / @baseFont);
+      border: 0;
+      background: #fff2cc;
+      color: #757575;
+      margin-top: (11rem / @baseFont);
+      font-size: (25rem / @baseFont);
+      padding-left: (35rem / @baseFont);
+      padding-right: (25rem / @baseFont);
+    }
+  }
+  .login {
+    width: (75rem / @baseFont);
+    height: (70rem / @baseFont);
+    line-height: (70rem / @baseFont);
+    text-align: center;
+    color: #fff;
+    margin: (10rem / @baseFont);
+    font-size: (25rem / @baseFont);
+  }
+}
+
+// banner 部分制作
+.banner {
+  width: (750rem / @baseFont);
+  height: (368rem / @baseFont);
+  img {
+    width: 100%;
+    height: 100%;
+  }
+}
+
+// ad 部分
+.ad {
+  display: flex;
+  a {
+    flex: 1;
+    img {
+      width: 100%;
+    }
+  }
+}
+
+// nav 部分
+
+nav {
+  width: (750rem / @baseFont);
+  a {
+    float: left;
+    width: (150rem / @baseFont);
+    height: (140rem / @baseFont);
+    text-align: center;
+    img {
+      width: (82rem / @baseFont);
+      height: (82rem / @baseFont);
+      display: block;
+      margin: (10rem / @baseFont) auto 0;
+    }
+    span {
+      display: block;
+      color: #333;
+      margin-top: (10rem / @baseFont);
+      font-size: (25rem / @baseFont);
+    }
+  }
+}

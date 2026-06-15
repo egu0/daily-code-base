@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <style>
+    * {
+      padding: 0;
+      margin: 0;
+    }
+    .box {
+      width: 200px;
+      height: 200px;
+      border: 1px solid #ccc;
+      /* margin: 100px auto; */
+      /* 指定宽度的同时也设置左右 padding 为 20px，会撑大盒子 */
+      padding-left: 20px;
+      padding-right: 20px;
+      /* 此时盒子长度为 242 = 200 + 20*2 + 1*2 */
+    }
+  </style>
+  <body>
+    <div class="box"></div>
+  </body>
+</html>

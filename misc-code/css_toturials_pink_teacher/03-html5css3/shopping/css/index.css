@@ -1,0 +1,187 @@
+/* 首页（主体）样式文件 */
+.main {
+  margin-top: 10px;
+  width: 980px;
+  height: 455px;
+  margin-left: 220px;
+}
+.main .focus {
+  float: left;
+  width: 721px;
+  height: 100%;
+}
+.main .newsflash {
+  float: right;
+  width: 250px;
+  height: 100%;
+}
+.news {
+  height: 165px;
+  border: 1px solid #e4e4e4;
+}
+.bargain {
+  margin-top: 5px;
+}
+.news .news-hd {
+  height: 32px;
+  line-height: 32px;
+  border-bottom: 1px dotted #e4e4e4;
+}
+.news .news-hd h5 {
+  float: left;
+  font-size: 14px;
+  margin-left: 15px;
+}
+.news .news-hd .more {
+  position: relative;
+  float: right;
+  margin-right: 15px;
+}
+.news .news-hd .more::after {
+  /* 微调箭头的位置 */
+  position: absolute;
+  top: 0.3px;
+  right: -10px;
+  content: '\e920';
+  font-family: 'icomoon';
+}
+.news .news-bd {
+  padding: 5px 10px 0;
+}
+.news .news-bd ul li {
+  height: 24px;
+  line-height: 24px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.lifeservice {
+  height: 209px;
+  border: 1px solid #e4e4e4;
+  border-top: 0;
+  overflow: hidden;
+}
+.lifeservice ul {
+  /* 一行装不下 4 个 li：改变 li 的父元素 ul 宽度以让 li 装下 */
+  /* 出现新问题：ul 超出其父元素；解决方法：hide overflowed part */
+  /* 64*4 = 256 */
+  width: 256px;
+}
+.lifeservice ul li {
+  float: left;
+  width: 63px;
+  height: 71px;
+  border-right: 1px solid #e4e4e4;
+  border-bottom: 1px solid #e4e4e4;
+  text-align: center;
+}
+.lifeservice ul li i {
+  display: inline-block;
+  width: 24px;
+  height: 28px;
+  background: url(../images/icons.png) no-repeat -16px -15px;
+  margin-top: 12px;
+}
+/* 推荐模块制作 */
+.recom {
+  height: 163px;
+  background-color: #ebebeb;
+  margin-top: 12px;
+}
+.recom-hd {
+  height: 163px;
+  line-height: 163px;
+  text-align: center;
+  width: 205px;
+  float: left;
+  background-color: #5c5251;
+}
+.recom-bd {
+  float: left;
+}
+.recom-bd ul li {
+  position: relative;
+  float: left;
+}
+.recom-bd ul li img {
+  /* 指定图片大小，避免因图片分辨率不同造成的图片错乱 */
+  width: 248px;
+  height: 163px;
+}
+/* .recom-bd ul li::after { */
+/* 只选择前三个 li 并为他们添加小竖线 */
+.recom-bd ul li:nth-child(-n + 3):after {
+  position: absolute;
+  right: 0;
+  top: 10px;
+  content: '';
+  width: 1px;
+  height: 145px;
+  background-color: #ddd;
+}
+/* 家用电器模块 */
+.floor .w {
+  margin-top: 10px;
+}
+.box-hd {
+  height: 30px;
+  line-height: 30px;
+  border-bottom: 2px solid #c81623;
+}
+.box-hd h3 {
+  float: left;
+  color: #c81623;
+  font-size: 18px;
+  font-weight: 400;
+}
+.box-hd .tab-list {
+  float: right;
+}
+.box-hd .tab-list ul li {
+  float: left;
+}
+.box-hd .tab-list ul li a {
+  margin: 0 15px;
+}
+.box-bd {
+  height: 361px;
+  /* background-color: pink; */
+}
+.box-bd .tab-content .tab-list-item > div {
+  float: left;
+  height: 361px;
+}
+.col_210 {
+  width: 210px;
+  background-color: #fbfbfb;
+  text-align: center;
+}
+.col_210 ul {
+  padding-left: 12px;
+}
+.col_210 ul li {
+  float: left;
+  width: 85px;
+  height: 34px;
+  line-height: 33px;
+  border-bottom: 1px solid #ccc;
+  text-align: center;
+  margin-right: 10px;
+}
+.col_329 {
+  width: 329px;
+}
+.col_221 {
+  width: 221px;
+}
+.col_221 {
+  border-right: 1px solid #ccc;
+}
+.col_219 {
+  width: 219px;
+}
+.bb {
+  /* a 如果包含有宽度的盒子，则需要将 a 转为块级元素 */
+  display: inline-block;
+  border-bottom: 1px solid #ccc;
+}

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <style>
+      .box {
+        perspective: 500px;
+        position: relative;
+        margin: 100px auto;
+        width: 300px;
+        height: 500px;
+        transition: all 2s;
+        /* 让子元素保持3d立体空间 */
+        transform-style: preserve-3d;
+        transform: rotateY(-60deg);
+      }
+      .child1 {
+        position: absolute;
+        top: 50px;
+        width: 300px;
+        height: 200px;
+        background-color: pink;
+        /* transform: rotateX(30deg); */
+      }
+      .child2 {
+        position: absolute;
+        top: 0;
+        width: 300px;
+        height: 300px;
+        background-color: blue;
+        transition: all 1s;
+      }
+      .child2:hover {
+        transform: rotateX(60deg);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="box">
+      <div class="child1"></div>
+      <div class="child2"></div>
+    </div>
+  </body>
+</html>

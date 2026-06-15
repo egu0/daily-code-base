@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+    }
+    .box {
+      margin: 30px auto;
+      width: 200px;
+      height: 200px;
+      background-color: pink;
+      overflow: hidden;
+    }
+    .child {
+      height: inherit;
+      width: inherit;
+      background-color: purple;
+      transform-origin: 0 100%;
+      transform: rotate(90deg);
+      transition: all 0.2s;
+    }
+    .box:hover .child {
+      transform: rotate(0deg);
+    }
+    .child img {
+      width: 200px;
+      height: 200px;
+    }
+  </style>
+  <body>
+    <div class="box">
+      <div class="child">
+        <img src="images/yjtp.png" alt="" />
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <style>
+    /* 1.定义动画 */
+    @keyframes move {
+      0% {
+        transform: translate(0, 0);
+      }
+      25% {
+        transform: translate(400px, 0) rotate(45deg);
+      }
+      50% {
+        transform: translate(400px, 400px) rotate(90deg);
+      }
+      75% {
+        transform: translate(0, 400px) rotate(135deg);
+      }
+      100% {
+        transform: translate(0, 0) rotate(180deg);
+      }
+    }
+    p {
+      width: 50px;
+      height: 50px;
+      background-color: pink;
+      /* 2.使用动画。设置动画名称、持续时间 */
+      animation-name: move;
+      animation-duration: 4s;
+    }
+  </style>
+  <body>
+    <p>1</p>
+  </body>
+</html>

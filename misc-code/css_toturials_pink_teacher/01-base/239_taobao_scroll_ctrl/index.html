@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <style>
+    * {
+      padding: 0;
+      margin: 0;
+    }
+    li {
+      list-style: none;
+    }
+    a {
+      text-decoration: none;
+    }
+    .tb-promo {
+      position: relative;
+      width: 520px;
+      height: 280px;
+      background-color: pink;
+      margin: 100px auto;
+    }
+    .tb-promo img {
+      width: 520px;
+      height: 280px;
+    }
+    .left-arrow,
+    .right-arrow {
+      position: absolute;
+      top: 50%;
+      margin-top: -10px;
+      width: 20px;
+      height: 30px;
+      background-color: rgba(0, 0, 0, 0.2);
+      color: #fff;
+      text-align: center;
+      font-size: 16px;
+      line-height: 30px;
+    }
+    .left-arrow {
+      left: 0;
+      border-top-right-radius: 15px;
+      border-bottom-right-radius: 15px;
+    }
+    .right-arrow {
+      right: 0;
+      border-top-left-radius: 15px;
+      border-bottom-left-radius: 15px;
+    }
+    .left-arrow:hover,
+    .right-arrow:hover {
+      background-color: rgba(0, 0, 0, 0.4);
+    }
+    .promo-nav {
+      position: absolute;
+      bottom: 15px;
+      left: 50%;
+      width: 70px;
+      height: 13px;
+      margin-left: -35px;
+      background-color: rgba(255, 255, 255, 0.3);
+      border-radius: 6px;
+    }
+    .promo-nav li {
+      float: left;
+      width: 8px;
+      height: 8px;
+      background-color: #fff;
+      border-radius: 4px;
+      margin: 3px;
+    }
+    .promo-nav .active {
+      background-color: #ff5000;
+    }
+  </style>
+  <body>
+    <div class="tb-promo">
+      <img src="images/tb.jpg" alt="" />
+      <a class="left-arrow" href="#">&lt;</a>
+      <a class="right-arrow" href="#">&gt;</a>
+      <ul class="promo-nav">
+        <li class="active"></li>
+        <li></li>
+        <li></li>
+        <li></li>
+        <li></li>
+      </ul>
+    </div>
+  </body>
+</html>

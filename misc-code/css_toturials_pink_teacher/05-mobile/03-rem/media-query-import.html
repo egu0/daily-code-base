@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <!-- 引入资源：针对不同的屏幕尺寸使用不同的 css 文件 -->
+    <!-- 不是动态加载（开始时会加载两个样式文件），而是动态使用 -->
+    <link
+      rel="stylesheet"
+      href="style-320px.css"
+      media="screen and (min-width: 320px)"
+    />
+    <link
+      rel="stylesheet"
+      href="style-640px.css"
+      media="screen and (min-width: 640px)"
+    />
+  </head>
+  <body>
+    <div>1</div>
+    <div>2</div>
+  </body>
+</html>

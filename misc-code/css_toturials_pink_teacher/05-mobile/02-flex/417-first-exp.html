@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>flex 布局初体验</title>
+  </head>
+  <style>
+    div {
+      width: 80%;
+      height: 500px;
+      background-color: pink;
+      /* 注！为父元素设置 flex 布局，子元素无需做转换 */
+      display: flex;
+      /* flex 布局其他属性 */
+      justify-content: space-around;
+    }
+    div span {
+      width: 150px;
+      height: 100px;
+      background-color: purple;
+    }
+  </style>
+  <body>
+    <div><span>1</span><span>2</span><span>3</span></div>
+  </body>
+</html>

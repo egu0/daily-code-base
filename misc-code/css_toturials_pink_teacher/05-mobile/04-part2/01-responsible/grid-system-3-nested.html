@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Bootstrap 101 Template</title>
+    <link rel="stylesheet" href="bootstrap/css/bootstrap.min.css" />
+    <!--[if lt IE 9]>
+      <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+      <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+    <![endif]-->
+    <style>
+      [class^='col-lg-'] {
+        height: 80px;
+        box-sizing: border-box;
+        border: 1px solid #ccc;
+      }
+      .container {
+        background-color: pink;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="row">
+        <div class="col-lg-4">
+          <!-- 将某一列看成一个单独的行，可以继续分 -->
+          <div class="row">
+            <div class="col-lg-4">a</div>
+            <div class="col-lg-8">b</div>
+          </div>
+        </div>
+        <div class="col-lg-4">2</div>
+        <div class="col-lg-4">3</div>
+      </div>
+    </div>
+  </body>
+</html>

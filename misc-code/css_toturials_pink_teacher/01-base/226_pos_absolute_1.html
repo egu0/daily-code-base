@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <style>
+    .father {
+      height: 500px;
+      width: 500px;
+      background-color: skyblue;
+    }
+    /* 父元素没有定位，则以浏览器为准进行定位 */
+    .son {
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      height: 200px;
+      width: 200px;
+      background-color: pink;
+    }
+  </style>
+  <body>
+    <div class="father">
+      <div class="son"></div>
+    </div>
+  </body>
+</html>

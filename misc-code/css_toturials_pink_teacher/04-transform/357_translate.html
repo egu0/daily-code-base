@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+    }
+    p {
+      width: 200px;
+      height: 200px;
+      /* 同时移动 x、y 轴 */
+      /* transform: translate(200px, 100px); */
+
+      /* 只移动 x 轴 */
+      /* transform: translate(200px, 0); */
+      /* transform: translateX(100px); */
+    }
+    .p2 {
+      background-color: purple;
+    }
+    .p1 {
+      background-color: pink;
+      transform: translate(100px, 300px);
+    }
+  </style>
+  <body>
+    <p class="p1"></p>
+    <p class="p2"></p>
+  </body>
+</html>

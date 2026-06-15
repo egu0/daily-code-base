@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <style>
+    .grandfa {
+      position: relative;
+      height: 700px;
+      width: 700px;
+      background-color: #cfa;
+    }
+    .father {
+      position: relative;
+      height: 400px;
+      width: 400px;
+      background-color: skyblue;
+    }
+    .son {
+      /* 相对于最近一级有定位的父级元素进行定位 */
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      height: 200px;
+      width: 200px;
+      background-color: pink;
+    }
+  </style>
+  <body>
+    <div class="grandfa">
+      <div class="father">
+        <div class="son"></div>
+      </div>
+    </div>
+  </body>
+</html>

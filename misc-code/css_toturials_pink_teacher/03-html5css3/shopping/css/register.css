@@ -1,0 +1,123 @@
+/* 注册页 */
+.w {
+  width: 1200px;
+  margin: 0 auto;
+}
+header {
+  height: 84px;
+  border-bottom: 2px solid #c81523;
+}
+.logo {
+  padding-top: 18px;
+}
+/* 注册主体 */
+.registerarea {
+  height: 520px;
+  border: 1px solid #ccc;
+  margin-top: 20px;
+}
+.registerarea h3 {
+  height: 42px;
+  line-height: 42px;
+  border-bottom: 1px solid #ccc;
+  background-color: #ececec;
+  padding-left: 10px;
+  font-size: 16px;
+}
+.registerarea h3 div {
+  float: right;
+  padding-right: 10px;
+  font-size: 14px;
+}
+.registerarea h3 div a {
+  color: #c81523;
+}
+.reg-form {
+  width: 600px;
+  margin: 50px auto 0;
+  /* background-color: pink; */
+}
+.reg-form ul li label {
+  /* 对 label 指定宽度、右对齐 */
+  display: inline-block;
+  text-align: right;
+  width: 88px;
+}
+.reg-form ul li {
+  margin-bottom: 20px;
+}
+.reg-form ul li .inp {
+  width: 242px;
+  height: 37px;
+  border: 1px solid #ccc;
+  padding-left: 10px;
+}
+.error {
+  padding-left: 10px;
+  color: red;
+}
+.success-icon,
+.error-icon {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  vertical-align: middle;
+  margin-top: -2px;
+}
+.error-icon {
+  background: url(../images/error.png) no-repeat;
+}
+.success {
+  padding-left: 10px;
+  color: green;
+}
+.success-icon {
+  background: url(../images/success.png) no-repeat;
+}
+.safe {
+  padding-left: 170px;
+}
+.safe em {
+  padding: 0 12px;
+  margin-right: 2px;
+  color: #fff;
+}
+.safe .weak {
+  background-color: #de1111;
+}
+.safe .middle {
+  background-color: #40b83f;
+}
+.safe .strong {
+  background-color: #f79100;
+}
+.agree {
+  padding-left: 126px;
+}
+.agree input {
+  vertical-align: middle;
+}
+.agree a {
+  color: #3273f6;
+}
+.btn {
+  width: 200px;
+  height: 34px;
+  background-color: #c81523;
+  color: #fff;
+  margin-left: 100px;
+  margin-top: 20px;
+}
+.mod_copyright {
+  text-align: center;
+  margin-top: 20px;
+}
+.mod_copyright .links {
+  margin-top: 15px;
+}
+.mod_copyright .links a {
+  margin: 0 3px;
+}
+.mod_copyright .copyright {
+  line-height: 20px;
+}

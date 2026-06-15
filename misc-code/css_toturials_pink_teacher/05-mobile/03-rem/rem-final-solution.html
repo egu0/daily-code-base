@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <style>
+      @media screen and (min-width: 320px) {
+        html {
+          font-size: 21.33px;
+        }
+      }
+      @media screen and (min-width: 750px) {
+        html {
+          font-size: 50px;
+        }
+      }
+      div {
+        width: 2rem;
+        height: 2rem;
+        background-color: pink;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- 在 >=320px 时 div 宽度为 42.66px  -->
+    <!-- 在 >=750px 时 div 宽度为    50px  -->
+    <div></div>
+  </body>
+</html>

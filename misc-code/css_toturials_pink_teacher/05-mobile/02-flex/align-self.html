@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <style>
+      p {
+        width: 500px;
+        height: 400px;
+        background-color: pink;
+        display: flex;
+        align-items: flex-end;
+      }
+      p span {
+        width: 100px;
+        height: 150px;
+        background-color: purple;
+        margin: 10px;
+      }
+      p span:nth-child(2) {
+        align-self: center;
+      }
+    </style>
+  </head>
+  <body>
+    <p><span>1</span><span>2</span><span>3</span></p>
+  </body>
+</html>

@@ -1,0 +1,14 @@
+div {
+  width: 200px;
+  height: 200px;
+  border: 10px solid red;
+}
+html {
+  font-size: 50px;
+}
+p {
+  width: 1.64rem;
+  height: 1.64rem;
+  background-color: #808080;
+  border: 5px solid blue;
+}

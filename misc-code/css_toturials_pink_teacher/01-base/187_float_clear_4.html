@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <style>
+    .box {
+      background-color: #cfa;
+    }
+    .box .first {
+      width: 200px;
+      height: 200px;
+      background-color: #eee;
+      float: left;
+    }
+    .box .second {
+      width: 300px;
+      height: 250px;
+      background-color: gray;
+      float: left;
+    }
+    .footer {
+      height: 250px;
+      background-color: orangered;
+    }
+    .clearfix:before,
+    .clearfix:after {
+      content: '';
+      display: table;
+    }
+    .clearfix:after {
+      clear: both;
+    }
+    .clearfix {
+      *zoom: 1;
+    }
+  </style>
+  <body>
+    <div class="box clearfix">
+      <div class="first"></div>
+      <div class="second"></div>
+    </div>
+    <div class="footer"></div>
+  </body>
+</html>

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <style>
+    * {
+      padding: 0;
+      margin: 0;
+    }
+    /* 任何元素都可以浮动。不管原来是什么模式的元素，添加浮动之后都具有行内快元素相似的特性 */
+    /* 如果行内元素有了浮动，则不需要转换块级\行内块元素就可以直接给宽高 */
+    span,
+    p {
+      width: 200px;
+      height: 200px;
+      background-color: #cfa;
+      float: left;
+    }
+  </style>
+  <body>
+    <span>1</span>
+    <span>2</span>
+    <p>3</p>
+  </body>
+</html>

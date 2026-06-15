@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      ul {
+        padding: 0;
+        margin: 0;
+      }
+      li {
+        list-style: none;
+      }
+      .container {
+        background-color: pink;
+        margin: 0 auto;
+        height: 100px;
+      }
+      .container ul li {
+        float: left;
+        box-sizing: border-box;
+        height: 30px;
+        border: 1px solid #000;
+      }
+      /* 屏幕宽度 <768 */
+      @media screen and (max-width: 768px) {
+        .container {
+          width: 100%;
+        }
+        .container ul li {
+          width: 33.33%;
+        }
+      }
+      /* 屏幕宽度 >=768（利用层叠性，上边设置的【等于 768px】条件被覆盖！） */
+      @media screen and (min-width: 768px) {
+        .container {
+          width: 750px;
+        }
+        .container ul li {
+          width: 93.75px;
+        }
+      }
+    </style>
+    <title>Document</title>
+  </head>
+  <body>
+    <div class="container">
+      <ul>
+        <li>1</li>
+        <li>2</li>
+        <li>3</li>
+        <li>4</li>
+        <li>5</li>
+        <li>6</li>
+        <li>7</li>
+        <li>8</li>
+      </ul>
+    </div>
+  </body>
+</html>

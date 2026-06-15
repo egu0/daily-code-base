@@ -1,0 +1,64 @@
+/* 列表页样式 */
+.nav {
+  overflow: hidden;
+}
+.seckill {
+  position: absolute;
+  left: 190px;
+  top: 40px;
+  border-left: 1px solid #c81523;
+  padding-left: 10px;
+}
+.sk_list {
+  float: left;
+}
+.sk_list ul li {
+  float: left;
+}
+.sk_list ul li a {
+  display: block;
+  line-height: 49px;
+  padding: 0 30px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #000;
+}
+.sk_content {
+  float: right;
+}
+.sk_content ul li {
+  float: left;
+}
+.sk_content ul li a {
+  display: block;
+  line-height: 49px;
+  padding: 0 20px;
+  font-size: 14px;
+}
+.sk_content ul li:last-child {
+  position: relative;
+}
+/* 为最后一个 li 的 a 添加 ::after */
+.sk_content ul li:last-child a::after {
+  /* 加定位微调图标 */
+  position: absolute;
+  top: 0.2px;
+  right: 6px;
+  content: '\e91e';
+  font-family: 'icomoon';
+}
+.sk-bd ul li {
+  float: left;
+  overflow: hidden;
+  width: 290px;
+  height: 460px;
+  border: 1px solid transparent;
+  margin-right: 13px;
+}
+/* 清除每一行最后一个 li 的右边 */
+.sk-bd ul li:nth-child(4n) {
+  margin-right: 0;
+}
+.sk-bd ul li:hover {
+  border: 1px solid #c81523;
+}

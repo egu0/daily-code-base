@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+    }
+    p {
+      margin: 50px auto;
+      width: 200px;
+      height: 200px;
+      background: pink;
+      transition: all 1s;
+      transform: rotate(0deg);
+      /* 默认中心点（相对于元素的左上角）*/
+      /* transform-origin: 50% 50%; */
+
+      /* 使用百分比设置旋转中心点 */
+      /* transform-origin: 0 50%; */
+      /* 也可以用像素 */
+      /* transform-origin: 0 100px; */
+      /* 也可使用方位名词 */
+      transform-origin: left center;
+    }
+    p:hover {
+      transform: rotate(360deg);
+    }
+  </style>
+  <body>
+    <p></p>
+  </body>
+</html>

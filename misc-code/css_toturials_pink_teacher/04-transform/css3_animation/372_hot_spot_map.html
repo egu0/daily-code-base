@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <style>
+      .map {
+        position: relative;
+        width: 747px;
+        height: 616px;
+        background: url(images/map.png) no-repeat;
+        margin: 0 auto;
+      }
+      .city {
+        position: absolute;
+        top: 227px;
+        left: 550px;
+        color: #fff;
+      }
+      .dot {
+        width: 8px;
+        height: 8px;
+        background-color: #09f;
+        border-radius: 50%;
+      }
+      .city div[class^='wave'] {
+        position: absolute;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        box-shadow: 0 0 12px #009dfd;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+      }
+      @keyframes larger {
+        0% {
+        }
+        70% {
+          width: 40px;
+          height: 40px;
+          opacity: 0.5;
+        }
+        100% {
+          width: 72px;
+          height: 72px;
+          opacity: 0.2;
+        }
+      }
+      .wave1 {
+        animation: larger 1.2s linear infinite;
+      }
+      .wave2 {
+        animation: larger 1.2s linear 0.4s infinite;
+      }
+      .wave3 {
+        animation: larger 1.2s linear 0.8s infinite;
+      }
+      body {
+        background-color: #333;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="map">
+      <div class="city">
+        <!-- 四合一：小圆点 + 三个波纹 -->
+        <div class="dot"></div>
+        <div class="wave1"></div>
+        <div class="wave2"></div>
+        <div class="wave3"></div>
+      </div>
+    </div>
+  </body>
+</html>

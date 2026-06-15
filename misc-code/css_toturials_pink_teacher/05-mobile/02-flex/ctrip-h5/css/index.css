@@ -1,0 +1,357 @@
+body {
+  min-width: 320px;
+  max-width: 540px;
+  margin: 0 auto;
+  font: normal 14px/1.5 Tohama, "Lucida Grande", Verdana, "Microsoft Yahei", STXihei, hei;
+  color: #000;
+  background-color: #f2f2f2;
+  overflow-x: hidden;
+  -webkit-tap-highlight-color: transparent;
+}
+
+ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+a {
+  color: #222;
+  text-decoration: none;
+}
+
+div {
+  box-sizing: border-box;
+}
+
+/* 搜索模块 */
+
+.search-index {
+  display: flex;
+  position: fixed;
+  /* 顶部居中 */
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  /* 固定位置的盒子必须有宽度 */
+  width: 100%;
+  min-width: 320px;
+  max-width: 540px;
+  height: 44px;
+  background-color: #f6f6f6;
+  border-top: 1px solid #ccc;
+  border-bottom: 1px solid #ccc;
+}
+
+.search {
+  position: relative;
+  height: 26px;
+  border: 1px solid #ccc;
+  margin: 8px 10px;
+  border-radius: 5px;
+  flex: 1;
+  font-size: 12px;
+  color: #666;
+  /* 注！CSS3 盒模型中高度包含了边框，所以要高度减去边框做行高 */
+  line-height: 24px;
+  padding-left: 24px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, .2);
+}
+
+.search::before {
+  content: '';
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  /* 加了绝对定位的元素可以有大小 */
+  height: 15px;
+  width: 15px;
+  background: url(../images/sprite.png) no-repeat -59px -279px;
+  background-size: 104px auto;
+}
+
+.user {
+  width: 44px;
+  height: 44px;
+  font-size: 12px;
+  text-align: center;
+  color: #2eaae0;
+}
+
+.user::before {
+  content: '';
+  display: block;
+  width: 23px;
+  height: 23px;
+  background: url(../images/sprite.png) no-repeat -59px -194px;
+  background-size: 104px auto;
+  margin: 4px auto -2px;
+}
+
+.focus img {
+  width: 100%;
+  margin-top: 44px;
+}
+
+/* 局部导航栏 */
+
+.local-nav {
+  display: flex;
+  height: 64px;
+  background-color: #fff;
+  border-radius: 8px;
+  margin: 3px 4px;
+}
+
+.local-nav li {
+  flex: 1;
+}
+
+.local-nav li a {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* 使用属性选择器为所有图片 span 设置共同属性 */
+.local-nav li [class^="local-nav-icon-"] {
+  margin-top: 8px;
+  width: 32px;
+  height: 32px;
+}
+
+.local-nav li .local-nav-icon-1 {
+  background: url(../images/localnav_bg.png) no-repeat 0 0;
+  background-size: 32px auto;
+}
+
+.local-nav li .local-nav-icon-2 {
+  background: url(../images/localnav_bg.png) no-repeat 0 -32px;
+  background-size: 32px auto;
+}
+
+.local-nav li .local-nav-icon-3 {
+  background: url(../images/localnav_bg.png) no-repeat 0 -64px;
+  background-size: 32px auto;
+}
+
+.local-nav li .local-nav-icon-4 {
+  background: url(../images/localnav_bg.png) no-repeat 0 -96px;
+  background-size: 32px auto;
+}
+
+.local-nav li .local-nav-icon-5 {
+  background: url(../images/localnav_bg.png) no-repeat 0 -128px;
+  background-size: 32px auto;
+}
+
+/* 主导航栏 */
+
+nav {
+  overflow: hidden;
+  border-radius: 8px;
+  margin: 0px 4px 3px;
+}
+
+.nav-common {
+  display: flex;
+  height: 88px;
+  background-color: pink;
+}
+
+.nav-common:nth-child(2) {
+  margin: 3px 0;
+}
+
+.nav-items {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+}
+
+.nav-items:nth-child(-n+2) {
+  border-right: 1px solid #fff;
+}
+
+.nav-items a {
+  flex: 1;
+  width: 100%;
+  line-height: 44px;
+  text-align: center;
+  font-size: 14px;
+  color: #fff;
+  text-shadow: 1px 1px rgba(0, 0, 0, .2);
+}
+
+.nav-items:nth-child(n+2) a:nth-child(1) {
+  border-bottom: 1px solid #fff;
+}
+
+.nav-items:nth-child(1) a {
+  background: url(../images/hotel.png) no-repeat bottom center;
+  background-size: 121px auto;
+}
+
+.nav-common:nth-child(1) {
+  background: -webkit-linear-gradient(left, #fa5a55, #fa994d);
+}
+
+.nav-common:nth-child(2) {
+  background: -webkit-linear-gradient(left, #4b90ed, #53bced);
+}
+
+.nav-common:nth-child(3) {
+  background: -webkit-linear-gradient(left, #34c2a9, #6cd559);
+}
+
+/* 侧导航栏入口制作 */
+
+.subnav-entry {
+  display: flex;
+  flex-wrap: wrap;
+  border-radius: 8px;
+  margin: 0 4px;
+  overflow: hidden;
+  background-color: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .2);
+}
+
+.subnav-entry li {
+  width: 20%;
+}
+
+.subnav-entry a {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.subnav-entry [class^="subnav-entry-icon"] {
+  width: 28px;
+  height: 28px;
+  margin: 10px 0 -4px;
+}
+
+.subnav-entry-icon-1 {
+  background: url(../images/subnav-bg.png) no-repeat 0 3px;
+  background-size: 28px auto;
+}
+
+.subnav-entry-icon-2 {
+  background: url(../images/subnav-bg.png) no-repeat 3px -30px;
+  background-size: 28px auto;
+}
+
+.subnav-entry-icon-3 {
+  background: url(../images/subnav-bg.png) no-repeat 0 -63px;
+  background-size: 28px auto;
+}
+
+.subnav-entry-icon-4 {
+  background: url(../images/subnav-bg.png) no-repeat 0 -63px;
+  background-size: 28px auto;
+}
+
+.subnav-entry-icon-5 {
+  background: url(../images/subnav-bg.png) no-repeat 0 -63px;
+  background-size: 28px auto;
+}
+
+.subnav-entry-icon-6 {
+  background: url(../images/subnav-bg.png) no-repeat 0 -63px;
+  background-size: 28px auto;
+}
+
+.subnav-entry-icon-7 {
+  background: url(../images/subnav-bg.png) no-repeat 0 -63px;
+  background-size: 28px auto;
+}
+
+.subnav-entry-icon-8 {
+  background: url(../images/subnav-bg.png) no-repeat 0 -63px;
+  background-size: 28px auto;
+}
+
+.subnav-entry-icon-9 {
+  background: url(../images/subnav-bg.png) no-repeat 0 -63px;
+  background-size: 28px auto;
+}
+
+.subnav-entry-icon-10 {
+  background: url(../images/subnav-bg.png) no-repeat 0 -63px;
+  background-size: 28px auto;
+}
+
+/* 销售模块 */
+
+.sales-box {
+  margin-top: 5px;
+  background-color: #fff;
+  border-top: 1px solid #e2e2e2;
+  margin: 6px 4px;
+}
+
+.sales-hd {
+  position: relative;
+  height: 44px;
+  border-bottom: 1px solid #eee;
+}
+
+.sales-hd h2 {
+  position: relative;
+  /* 将文字隐藏（SEO） */
+  text-indent: -99999px;
+  overflow: hidden;
+}
+
+.sales-hd h2::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  left: 16px;
+  width: 79px;
+  height: 15px;
+  background-color: pink;
+  background: url(../images/hot.png) no-repeat 0 -20px;
+  background-size: 79px auto;
+}
+
+.sales-hd .more {
+  position: absolute;
+  top: -2px;
+  right: 5px;
+  background: -webkit-linear-gradient(left, #ff506c, #ff6bc6);
+  border-radius: 8px;
+  padding: 3px 20px 3px 10px;
+  color: #fff;
+}
+
+.sales-hd .more::after {
+  position: absolute;
+  content: '';
+  top: 9px;
+  right: 8px;
+  width: 7px;
+  height: 7px;
+  border-top: 2px solid #fff;
+  border-right: 2px solid #fff;
+  transform: rotate(45deg);
+}
+
+.row {
+  display: flex;
+}
+
+.row a {
+  flex: 1;
+  border-bottom: 1px solid #eee;
+}
+
+.row a:nth-child(1) {
+  border-right: 1px solid #eee;
+}
+
+.row a img {
+  width: 100%;
+}

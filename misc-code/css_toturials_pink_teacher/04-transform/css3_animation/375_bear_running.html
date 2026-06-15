@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <style>
+      @keyframes bear {
+        0% {
+          background-position: 0 0;
+        }
+        100% {
+          background-position: -1600px 0;
+        }
+      }
+      @keyframes move {
+        0% {
+          left: 0;
+        }
+        100% {
+          left: 50%;
+          transform: translateX(-50%);
+        }
+      }
+      .bear {
+        position: absolute;
+        top: 210px;
+        width: 200px;
+        height: 100px;
+        background: url(images/bear.png) no-repeat;
+        animation: bear 2s steps(8) infinite, move 4s linear forwards;
+      }
+      .box {
+        height: 400px;
+        background-color: #ccc;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="box">
+      <div class="bear"></div>
+    </div>
+  </body>
+</html>

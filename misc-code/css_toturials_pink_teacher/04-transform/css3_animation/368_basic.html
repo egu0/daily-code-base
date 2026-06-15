@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <style>
+    /* 1.定义动画 */
+    @keyframes move {
+      0% {
+        transform: translate(0, 0);
+      }
+      100% {
+        transform: translate(1000px, 0);
+      }
+    }
+    p {
+      width: 200px;
+      height: 200px;
+      background-color: pink;
+      /* 2.使用动画。设置动画名称、持续时间 */
+      animation-name: move;
+      animation-duration: 2s;
+    }
+  </style>
+  <body>
+    <p></p>
+  </body>
+</html>

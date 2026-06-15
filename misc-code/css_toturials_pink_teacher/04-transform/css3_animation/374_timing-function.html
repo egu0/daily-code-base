@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <style>
+      @keyframes timing {
+        from {
+          width: 0;
+        }
+        to {
+          width: 800px;
+        }
+      }
+      .box {
+        margin: 0 auto;
+        width: 800px;
+      }
+      .box div[class^='box'] {
+        height: 50px;
+        background-color: pink;
+        margin-top: 10px;
+      }
+      .box .box1 {
+        animation: timing 3s linear infinite;
+      }
+      .box .box2 {
+        animation: timing 3s ease infinite;
+      }
+      .box .box3 {
+        animation: timing 3s ease-in infinite;
+      }
+      .box .box4 {
+        animation: timing 3s ease-out infinite;
+      }
+      .box .box5 {
+        animation: timing 3s ease-in-out infinite;
+      }
+      .box .box6 {
+        animation: timing 3s steps(10) infinite;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="box">
+      <div class="box1">linear</div>
+      <div class="box2">ease</div>
+      <div class="box3">ease-in</div>
+      <div class="box4">ease-out</div>
+      <div class="box5">ease-in-out</div>
+      <div class="box6">steps(10)</div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <style>
+      body {
+        perspective: 200px;
+      }
+      img {
+        margin: 100px auto;
+        width: 200px;
+        height: 200px;
+        display: block;
+        transition: all 1s;
+      }
+      img:hover {
+        /* 矢量 (0,1,0) 指向 y 轴，等价于 rotateY(45deg) */
+        /* transform: rotate3d(0, 1, 0, 45deg); */
+
+        /* 沿着矢量 (1,1,0) 旋转 */
+        transform: rotate3d(1, 1, 0, 45deg);
+      }
+    </style>
+  </head>
+  <body>
+    <img src="images/yjtp.png" alt="" />
+  </body>
+</html>

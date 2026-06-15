@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <style>
+    @keyframes move {
+      0% {
+        transform: translate(0, 0);
+      }
+      25% {
+        transform: translate(400px, 0) rotate(45deg);
+      }
+      50% {
+        transform: translate(400px, 400px) rotate(90deg);
+      }
+      75% {
+        transform: translate(0, 400px) rotate(135deg);
+      }
+      100% {
+        transform: translate(0, 0) rotate(180deg);
+      }
+    }
+    p {
+      width: 50px;
+      height: 50px;
+      background-color: pink;
+      /* 动画名称 */
+      animation-name: move;
+      /* 持续时间 */
+      animation-duration: 4s;
+      /* 运动曲线 */
+      animation-timing-function: ease;
+      /* 何时开始 */
+      animation-delay: 1s;
+      /* 迭代次数 */
+      /* animation-iteration-count: infinite; */
+      /* 播放方向。normal 正向，reverse 反向，alternate 正反交替 */
+      /* animation-direction: reverse; */
+      /* animation-direction: alternate; */
+      /* 结束后的状态。forwards 保留结束状态，backwards 返回起始状态 */
+      animation-fill-mode: forwards;
+    }
+    p:hover {
+      /* 鼠标悬停时，暂停动画 */
+      animation-play-state: paused;
+    }
+  </style>
+  <body>
+    <p>1</p>
+  </body>
+</html>

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <style>
+    div {
+      width: 200px;
+      height: 100px;
+      background-color: pink;
+      /* 为单个属性添加动画 */
+      /* transition: width 0.5s; */
+
+      /* 为多个属性添加动画，需要利用逗号进行分割 */
+      transition: width 0.5s, height 0.5s;
+
+      /* 为所有属性添加动画 */
+      /* transition: all 0.5s; */
+    }
+    div:hover {
+      width: 400px;
+      height: 200px;
+      background-color: red;
+    }
+  </style>
+  <body>
+    <div></div>
+  </body>
+</html>

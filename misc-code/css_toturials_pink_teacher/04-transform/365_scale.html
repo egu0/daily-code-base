@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+    }
+    li {
+      list-style: none;
+    }
+    .box {
+      margin: 100px auto;
+    }
+    .box ul li {
+      float: left;
+      width: 50px;
+      height: 50px;
+      line-height: 50px;
+      border: 2px solid skyblue;
+      border-radius: 25px;
+      text-align: center;
+      font-size: 30px;
+      margin-left: 20px;
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+    .box ul li:hover {
+      transform: scale(1.2);
+    }
+  </style>
+  <body>
+    <div class="box">
+      <ul>
+        <li>1</li>
+        <li>2</li>
+        <li>3</li>
+        <li>4</li>
+        <li>5</li>
+        <li>6</li>
+        <li>7</li>
+      </ul>
+    </div>
+  </body>
+</html>

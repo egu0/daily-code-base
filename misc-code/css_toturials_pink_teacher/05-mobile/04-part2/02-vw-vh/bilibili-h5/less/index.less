@@ -1,0 +1,167 @@
+@import url('base');
+
+// 基准值
+// @baseSize: 3.75vw;
+// vmin 表示 min(viewport-width, viewport-height), vmax 同理, 用来适应横屏
+@baseSize: 3.75vmin;
+
+// 头部模块
+
+.suspension {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100%;
+  z-index: 999;
+  background-color: #fff;
+  .m-navbar {
+    height: (44 / @baseSize);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 (12 / @baseSize) 0 (18 / @baseSize);
+    .logo {
+      i {
+        color: #fb7299;
+        font-size: (28 / @baseSize);
+      }
+    }
+    .right {
+      display: flex;
+      align-items: center;
+      .search {
+        i {
+          color: #ccc;
+          font-size: (22 / @baseSize);
+        }
+      }
+      .face {
+        width: (24 / @baseSize);
+        height: (24 / @baseSize);
+        background-color: white;
+        border-radius: 50%;
+        overflow: hidden;
+        margin: 0 (20 / @baseSize);
+        img {
+          width: 100%;
+        }
+      }
+      .app-btn {
+        width: (72 / @baseSize);
+        height: (24 / @baseSize);
+        border-radius: (5 / @baseSize);
+      }
+    }
+  }
+  .channel-menu {
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: (40 / @baseSize);
+    border-bottom: 1px solid #e7e7e7;
+    .tabs {
+      flex: 1;
+      overflow: hidden;
+      .tab-list {
+        display: flex;
+        a {
+          height: (40 / @baseSize);
+          line-height: (40 / @baseSize);
+          font-size: (14 / @baseSize);
+          padding: 0 (16 / @baseSize);
+          // 文本不换行
+          white-space: nowrap;
+        }
+        .line {
+          position: absolute;
+          left: (16 / @baseSize);
+          bottom: 0;
+          width: (28 / @baseSize);
+          height: (2 / @baseSize);
+          margin-bottom: (-1 / @baseSize);
+          border-radius: (0.5 / @baseSize);
+          background-color: #fb7299;
+        }
+      }
+    }
+    .after {
+      width: (40 / @baseSize);
+      height: (39 / @baseSize);
+      line-height: (40 / @baseSize);
+      text-align: center;
+      background-color: #fff;
+      i {
+        font-size: (20 / @baseSize);
+        color: #ccc;
+      }
+    }
+  }
+}
+
+// 主体区域
+
+.m-home {
+  padding: (85 / @baseSize) (5 / @baseSize);
+  .video-list {
+    display: flex;
+    flex-wrap: wrap;
+    .video-item {
+      width: 50%;
+      padding: (8 / @baseSize) (5 / @baseSize);
+      .card {
+        position: relative;
+        img {
+          height: (97 / @baseSize);
+        }
+        .count {
+          position: absolute;
+          // 决定定位盒子大小取决于内容大小，所以设置宽高
+          width: 100%;
+          height: (27 / @baseSize);
+          left: 0;
+          bottom: 0;
+          padding: 0 (5 / @baseSize);
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          background: -webkit-linear-gradient(top, transparent, #2e2e2e);
+          span {
+            font-size: (12 / @baseSize);
+            color: #fff;
+            i {
+              vertical-align: middle;
+            }
+          }
+        }
+      }
+      .title {
+        font-size: (12 / @baseSize);
+        margin-top: (6 / @baseSize);
+      }
+    }
+  }
+}
+
+// 底部
+
+.app {
+  position: fixed;
+  height: (38 / @baseSize);
+  width: 100%;
+  left: 0;
+  bottom: (30 / @baseSize);
+  padding: 0 (20 / @baseSize);
+  .btn-app {
+    font-size: (14 / @baseSize);
+    height: (38 / @baseSize);
+    line-height: (38 / @baseSize);
+    border-radius: (19 / @baseSize);
+    color: #fff;
+    background-color: #fb7299;
+    text-align: center;
+    i {
+      padding-right: (14 / @baseSize);
+    }
+  }
+}
