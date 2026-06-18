@@ -1,0 +1,4 @@
+interface:
+  display_name: "myRTA Test Availability"
+  short_description: "Check myRTA driving test availability safely."
+  default_prompt: "Check myRTA driving test availability for my booking."
