@@ -242,6 +242,10 @@ function renderHistory(messages) {
     if (message.role === "user") {
       appendMessage("user", message.content || "");
     } else if (message.role === "assistant") {
+      if (message.reasoning_content) {
+        appendTraceDetails("reasoning", "Reasoning", "saved").body.textContent =
+          message.reasoning_content;
+      }
       if (message.content) {
         appendMessage("assistant", message.content);
       }

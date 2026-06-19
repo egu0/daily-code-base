@@ -20,7 +20,7 @@ from .tools import tool_schemas, tools_map  # noqa: E402
 
 load_dotenv(ROOT_DIR / ".env")
 
-SYSTEM_PROMPT = "You are a helpful agent. Use tools when needed."
+SYSTEM_PROMPT = f"You are a helpful agent. Use tools when needed. If needed, current time is ${datetime.now()}"
 DATA_DIR = Path(__file__).resolve().parent / "data"
 SESSION_ID_PATTERN = re.compile(r"^[A-Za-z0-9_-]+$")
 
@@ -99,10 +99,8 @@ def load_session(session_id: str) -> SessionState | None:
         id=payload["id"],
         messages=payload.get("messages") or [],
         prompt_tokens=payload.get("prompt_tokens"),
-        created_at=payload.get("created_at")
-        or datetime.now(timezone.utc).isoformat(),
-        updated_at=payload.get("updated_at")
-        or datetime.now(timezone.utc).isoformat(),
+        created_at=payload.get("created_at") or datetime.now(timezone.utc).isoformat(),
+        updated_at=payload.get("updated_at") or datetime.now(timezone.utc).isoformat(),
     )
     if not session.messages:
         session.messages.append({"role": "system", "content": SYSTEM_PROMPT})
@@ -202,6 +200,19 @@ def update_prompt_tokens(session: SessionState, usage) -> bool:
     return True
 
 
+def extract_reasoning_text(delta) -> str | None:
+    for field_name in ("reasoning", "reasoning_content"):
+        value = getattr(delta, field_name, None)
+        if value:
+            return value
+
+    if isinstance(delta, dict):
+        return delta.get("reasoning") or delta.get("reasoning_content")
+
+    model_extra = getattr(delta, "model_extra", None) or {}
+    return model_extra.get("reasoning") or model_extra.get("reasoning_content")
+
+
 def compact_tool_calls(tool_calls) -> list[dict]:
     return [
         {
@@ -244,6 +255,7 @@ def stream_prompt(
         )
 
         assistant_content = []
+        reasoning_content = []
         tool_call_chunks: dict[int, dict] = {}
         message_id = f"msg_{uuid.uuid4().hex}"
 
@@ -269,8 +281,9 @@ def stream_prompt(
                         {"messageId": message_id, "text": content},
                     )
 
-                reasoning = getattr(delta, "reasoning", None)
+                reasoning = extract_reasoning_text(delta)
                 if reasoning:
+                    reasoning_content.append(reasoning)
                     yield event(
                         "reasoning_chunk",
                         {"messageId": f"reasoning_{message_id}", "text": reasoning},
@@ -308,6 +321,8 @@ def stream_prompt(
             "role": "assistant",
             "content": "".join(assistant_content) or "",
         }
+        if reasoning_content:
+            assistant_message["reasoning_content"] = "".join(reasoning_content)
         if tool_calls:
             assistant_message["tool_calls"] = tool_calls
 
