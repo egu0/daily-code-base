@@ -9,11 +9,12 @@ from .agent import (
     cancel_session,
     create_session,
     get_session,
+    session_payload,
     stream_prompt,
 )
 
 HOST = "127.0.0.1"
-PORT = 8765
+PORT = 8877
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 
 
@@ -31,7 +32,17 @@ class Handler(SimpleHTTPRequestHandler):
         if path == "/api/tools":
             self.send_json({"tools": available_tools()})
             return
+        if path.startswith("/api/sessions/"):
+            session_id = path.split("/")[3]
+            session = get_session(session_id)
+            if not session:
+                self.send_json({"error": "session not found"}, HTTPStatus.NOT_FOUND)
+                return
+            self.send_json(session_payload(session))
+            return
         if path == "/":
+            self.path = "/index.html"
+        elif not path.startswith("/api/") and "." not in Path(path).name:
             self.path = "/index.html"
         super().do_GET()
 
@@ -39,7 +50,7 @@ class Handler(SimpleHTTPRequestHandler):
         path = urlparse(self.path).path
         if path == "/api/sessions":
             session = create_session()
-            self.send_json({"sessionId": session.id})
+            self.send_json(session_payload(session))
             return
 
         if path.endswith("/cancel") and path.startswith("/api/sessions/"):

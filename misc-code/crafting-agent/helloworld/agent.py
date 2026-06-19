@@ -1,8 +1,10 @@
 import json
 import os
+import re
 import sys
 import uuid
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from pathlib import Path
 from threading import Event, Lock
 
@@ -19,6 +21,8 @@ from .tools import tool_schemas, tools_map  # noqa: E402
 load_dotenv(ROOT_DIR / ".env")
 
 SYSTEM_PROMPT = "You are a helpful agent. Use tools when needed."
+DATA_DIR = Path(__file__).resolve().parent / "data"
+SESSION_ID_PATTERN = re.compile(r"^[A-Za-z0-9_-]+$")
 
 client = OpenAI(
     base_url="https://api.deepseek.com/",
@@ -35,22 +39,100 @@ class SessionState:
     cancel_event: Event = field(default_factory=Event)
     lock: Lock = field(default_factory=Lock)
     prompt_tokens: int | None = None
+    created_at: str = field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat()
+    )
+    updated_at: str = field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat()
+    )
 
 
 sessions: dict[str, SessionState] = {}
 sessions_lock = Lock()
 
 
+def validate_session_id(session_id: str) -> bool:
+    return bool(session_id and SESSION_ID_PATTERN.fullmatch(session_id))
+
+
+def session_dir(session_id: str) -> Path:
+    return DATA_DIR / session_id
+
+
+def session_file(session_id: str) -> Path:
+    return session_dir(session_id) / "session.json"
+
+
+def session_to_json(session: SessionState) -> dict:
+    return {
+        "id": session.id,
+        "messages": session.messages,
+        "prompt_tokens": session.prompt_tokens,
+        "created_at": session.created_at,
+        "updated_at": session.updated_at,
+    }
+
+
+def save_session(session: SessionState) -> None:
+    session.updated_at = datetime.now(timezone.utc).isoformat()
+    directory = session_dir(session.id)
+    directory.mkdir(parents=True, exist_ok=True)
+    path = session_file(session.id)
+    tmp_path = path.with_suffix(".json.tmp")
+    tmp_path.write_text(
+        json.dumps(session_to_json(session), ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+    tmp_path.replace(path)
+
+
+def load_session(session_id: str) -> SessionState | None:
+    if not validate_session_id(session_id):
+        return None
+
+    path = session_file(session_id)
+    if not path.exists():
+        return None
+
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    session = SessionState(
+        id=payload["id"],
+        messages=payload.get("messages") or [],
+        prompt_tokens=payload.get("prompt_tokens"),
+        created_at=payload.get("created_at")
+        or datetime.now(timezone.utc).isoformat(),
+        updated_at=payload.get("updated_at")
+        or datetime.now(timezone.utc).isoformat(),
+    )
+    if not session.messages:
+        session.messages.append({"role": "system", "content": SYSTEM_PROMPT})
+    return session
+
+
 def create_session() -> SessionState:
     session = SessionState(id=f"sess_{uuid.uuid4().hex}")
+    save_session(session)
     with sessions_lock:
         sessions[session.id] = session
     return session
 
 
 def get_session(session_id: str) -> SessionState | None:
+    if not validate_session_id(session_id):
+        return None
+
     with sessions_lock:
-        return sessions.get(session_id)
+        session = sessions.get(session_id)
+        if session:
+            return session
+
+    session = load_session(session_id)
+    if not session:
+        return None
+
+    with sessions_lock:
+        sessions[session.id] = session
+    return session
 
 
 def cancel_session(session_id: str) -> bool:
@@ -100,12 +182,23 @@ def usage_event(session: SessionState) -> dict:
     )
 
 
+def session_payload(session: SessionState) -> dict:
+    return {
+        "sessionId": session.id,
+        "messages": session.messages,
+        "usage": usage_event(session)["data"],
+        "createdAt": session.created_at,
+        "updatedAt": session.updated_at,
+    }
+
+
 def update_prompt_tokens(session: SessionState, usage) -> bool:
     prompt_tokens = getattr(usage, "prompt_tokens", None)
     if prompt_tokens is None:
         return False
     with session.lock:
         session.prompt_tokens = prompt_tokens
+        save_session(session)
     return True
 
 
@@ -131,6 +224,7 @@ def stream_prompt(
     session.cancel_event.clear()
     with session.lock:
         session.messages.append({"role": "user", "content": prompt})
+        save_session(session)
         yield usage_event(session)
 
     yield event("turn_started", {"sessionId": session.id})
@@ -219,6 +313,7 @@ def stream_prompt(
 
         with session.lock:
             session.messages.append(assistant_message)
+            save_session(session)
             yield usage_event(session)
 
         if not tool_calls:
@@ -277,4 +372,5 @@ def stream_prompt(
                         "content": str(result),
                     }
                 )
+                save_session(session)
                 yield usage_event(session)

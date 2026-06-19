@@ -16,6 +16,7 @@ const els = {
   promptForm: document.querySelector("#promptForm"),
   promptInput: document.querySelector("#promptInput"),
   sendButton: document.querySelector("#sendButton"),
+  newSessionButton: document.querySelector("#newSessionButton"),
   stopButton: document.querySelector("#stopButton"),
   statusLabel: document.querySelector("#statusLabel"),
   tools: document.querySelector("#tools"),
@@ -87,6 +88,13 @@ function appendMessage(role, text, messageId = null) {
     state.assistantMessages.set(messageId, content);
   }
   return row;
+}
+
+function clearMessages() {
+  els.messages.innerHTML = "";
+  state.assistantMessages.clear();
+  state.toolItems.clear();
+  state.currentReasoning = null;
 }
 
 function appendAssistantChunk(messageId, text) {
@@ -195,6 +203,55 @@ function updateTool(data) {
     item.result.textContent = data.result;
     item.resultLabel.hidden = false;
   }
+}
+
+function parseToolArgs(rawArgs) {
+  if (!rawArgs) return {};
+  try {
+    return JSON.parse(rawArgs);
+  } catch {
+    return {};
+  }
+}
+
+function appendToolCallsFromMessage(message) {
+  (message.tool_calls || []).forEach((toolCall) => {
+    updateTool({
+      toolCallId: toolCall.id,
+      name: toolCall.function?.name || "tool",
+      args: parseToolArgs(toolCall.function?.arguments),
+      status: "completed",
+    });
+  });
+}
+
+function appendToolResultFromMessage(message) {
+  updateTool({
+    toolCallId: message.tool_call_id,
+    status: "completed",
+    result: message.content || "",
+  });
+}
+
+function renderHistory(messages) {
+  clearMessages();
+  state.autoScrollEnabled = true;
+
+  messages.forEach((message) => {
+    if (message.role === "system") return;
+    if (message.role === "user") {
+      appendMessage("user", message.content || "");
+    } else if (message.role === "assistant") {
+      if (message.content) {
+        appendMessage("assistant", message.content);
+      }
+      appendToolCallsFromMessage(message);
+    } else if (message.role === "tool") {
+      appendToolResultFromMessage(message);
+    }
+  });
+
+  scrollMessagesToBottom();
 }
 
 function appendReasoning(text) {
@@ -323,6 +380,49 @@ async function stopTurn() {
   setStatus("Cancelled");
 }
 
+function sessionUrl(sessionId) {
+  const url = new URL(window.location.href);
+  url.pathname = "/";
+  url.search = "";
+  url.searchParams.set("sid", sessionId);
+  return url.toString();
+}
+
+function currentSessionIdFromUrl() {
+  const querySessionId = new URLSearchParams(window.location.search).get("sid");
+  if (querySessionId) return querySessionId;
+  const pathMatch = window.location.pathname.match(/^\/sid=([^/]+)$/);
+  return pathMatch ? decodeURIComponent(pathMatch[1]) : null;
+}
+
+function setSession(session) {
+  state.sessionId = session.sessionId;
+  els.sessionLabel.textContent = state.sessionId;
+  renderHistory(session.messages || []);
+  updateUsage(session.usage || {});
+}
+
+async function createSession() {
+  const response = await fetch("/api/sessions", { method: "POST" });
+  if (!response.ok) {
+    throw new Error("Failed to create session");
+  }
+  return response.json();
+}
+
+async function loadSession(sessionId) {
+  const response = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}`);
+  if (!response.ok) {
+    throw new Error(`Session not found: ${sessionId}`);
+  }
+  return response.json();
+}
+
+async function openNewSession() {
+  const session = await createSession();
+  window.open(sessionUrl(session.sessionId), "_blank", "noopener");
+}
+
 function escapeHtml(value) {
   return String(value)
     .replaceAll("&", "&amp;")
@@ -333,15 +433,18 @@ function escapeHtml(value) {
 }
 
 async function init() {
-  const sessionResp = await fetch("/api/sessions", { method: "POST" });
-  const session = await sessionResp.json();
-  state.sessionId = session.sessionId;
-  els.sessionLabel.textContent = state.sessionId;
-
   const toolsResp = await fetch("/api/tools");
   const toolsPayload = await toolsResp.json();
   state.tools = toolsPayload.tools;
   renderTools(state.tools);
+
+  const sessionId = currentSessionIdFromUrl();
+  const session = sessionId ? await loadSession(sessionId) : await createSession();
+  setSession(session);
+
+  if (!sessionId) {
+    window.history.replaceState({}, "", sessionUrl(session.sessionId));
+  }
 }
 
 els.promptForm.addEventListener("submit", (event) => {
@@ -366,6 +469,13 @@ els.messages.addEventListener(
   },
   { passive: true },
 );
+
+els.newSessionButton.addEventListener("click", () => {
+  openNewSession().catch((error) => {
+    setStatus("Error", "error");
+    appendMessage("assistant", `Error: ${error.message}`);
+  });
+});
 
 els.stopButton.addEventListener("click", stopTurn);
 

@@ -368,6 +368,18 @@ button:disabled {
   background: #bf3f21;
 }
 
+.new-session-button {
+  min-width: 72px;
+  min-height: 38px;
+  color: var(--ink);
+  background: #f6f8f2;
+  border: 1px solid var(--line-strong);
+}
+
+.new-session-button:hover:not(:disabled) {
+  background: #e7eee5;
+}
+
 .side-pane {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
