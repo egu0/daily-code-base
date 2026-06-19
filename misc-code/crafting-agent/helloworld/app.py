@@ -11,6 +11,7 @@ from .agent import (
     get_session,
     session_payload,
     stream_prompt,
+    update_session_tools,
 )
 
 HOST = "127.0.0.1"
@@ -51,6 +52,20 @@ class Handler(SimpleHTTPRequestHandler):
         if path == "/api/sessions":
             session = create_session()
             self.send_json(session_payload(session))
+            return
+
+        if path.endswith("/tools") and path.startswith("/api/sessions/"):
+            session_id = path.split("/")[3]
+            body = self.read_json_body()
+            enabled = body.get("enabledTools", [])
+            if not isinstance(enabled, list):
+                self.send_json({"error": "enabledTools must be a list"}, HTTPStatus.BAD_REQUEST)
+                return
+            updated = update_session_tools(session_id, enabled)
+            self.send_json(
+                {"updated": updated},
+                HTTPStatus.OK if updated else HTTPStatus.NOT_FOUND,
+            )
             return
 
         if path.endswith("/cancel") and path.startswith("/api/sessions/"):

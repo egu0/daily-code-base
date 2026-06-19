@@ -39,6 +39,7 @@ class SessionState:
     cancel_event: Event = field(default_factory=Event)
     lock: Lock = field(default_factory=Lock)
     prompt_tokens: int | None = None
+    enabled_tools: list[str] | None = None
     created_at: str = field(
         default_factory=lambda: datetime.now(timezone.utc).isoformat()
     )
@@ -68,6 +69,7 @@ def session_to_json(session: SessionState) -> dict:
         "id": session.id,
         "messages": session.messages,
         "prompt_tokens": session.prompt_tokens,
+        "enabled_tools": session.enabled_tools,
         "created_at": session.created_at,
         "updated_at": session.updated_at,
     }
@@ -99,6 +101,7 @@ def load_session(session_id: str) -> SessionState | None:
         id=payload["id"],
         messages=payload.get("messages") or [],
         prompt_tokens=payload.get("prompt_tokens"),
+        enabled_tools=payload.get("enabled_tools"),
         created_at=payload.get("created_at") or datetime.now(timezone.utc).isoformat(),
         updated_at=payload.get("updated_at") or datetime.now(timezone.utc).isoformat(),
     )
@@ -138,6 +141,16 @@ def cancel_session(session_id: str) -> bool:
     if not session:
         return False
     session.cancel_event.set()
+    return True
+
+
+def update_session_tools(session_id: str, enabled_tools: list[str]) -> bool:
+    session = get_session(session_id)
+    if not session:
+        return False
+    with session.lock:
+        session.enabled_tools = enabled_tools
+        save_session(session)
     return True
 
 
@@ -181,10 +194,14 @@ def usage_event(session: SessionState) -> dict:
 
 
 def session_payload(session: SessionState) -> dict:
+    enabled = session.enabled_tools
+    if enabled is None:
+        enabled = [s["function"]["name"] for s in tool_schemas]
     return {
         "sessionId": session.id,
         "messages": session.messages,
         "usage": usage_event(session)["data"],
+        "enabledTools": enabled,
         "createdAt": session.created_at,
         "updatedAt": session.updated_at,
     }

@@ -138,13 +138,14 @@ function enabledTools() {
   ).map((input) => input.value);
 }
 
-function renderTools(tools) {
+function renderTools(tools, enabledTools) {
+  const enabledSet = new Set(enabledTools !== undefined ? enabledTools : tools.map((t) => t.name));
   els.tools.innerHTML = "";
   tools.forEach((tool) => {
     const label = document.createElement("label");
     label.className = "tool-row";
     label.innerHTML = `
-      <input type="checkbox" value="${escapeHtml(tool.name)}" checked />
+      <input type="checkbox" value="${escapeHtml(tool.name)}" ${enabledSet.has(tool.name) ? "checked" : ""} />
       <span>
         <strong>${escapeHtml(tool.name)}</strong>
         <span>${escapeHtml(tool.description)}</span>
@@ -152,6 +153,19 @@ function renderTools(tools) {
     `;
     els.tools.appendChild(label);
   });
+}
+
+async function syncToolSelection() {
+  if (!state.sessionId) return;
+  try {
+    await fetch(`/api/sessions/${state.sessionId}/tools`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ enabledTools: enabledTools() }),
+    });
+  } catch {
+    // Best-effort sync; silently ignore network errors
+  }
 }
 
 function setRunning(running) {
@@ -404,6 +418,9 @@ function setSession(session) {
   els.sessionLabel.textContent = state.sessionId;
   renderHistory(session.messages || []);
   updateUsage(session.usage || {});
+  if (state.tools.length > 0) {
+    renderTools(state.tools, session.enabledTools);
+  }
 }
 
 async function createSession() {
@@ -440,7 +457,6 @@ async function init() {
   const toolsResp = await fetch("/api/tools");
   const toolsPayload = await toolsResp.json();
   state.tools = toolsPayload.tools;
-  renderTools(state.tools);
 
   const sessionId = currentSessionIdFromUrl();
   const session = sessionId ? await loadSession(sessionId) : await createSession();
@@ -449,6 +465,12 @@ async function init() {
   if (!sessionId) {
     window.history.replaceState({}, "", sessionUrl(session.sessionId));
   }
+
+  els.tools.addEventListener("change", (event) => {
+    if (event.target.type === "checkbox") {
+      syncToolSelection();
+    }
+  });
 }
 
 els.promptForm.addEventListener("submit", (event) => {
