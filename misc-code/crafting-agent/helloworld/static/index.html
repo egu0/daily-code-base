@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Helloworld Web Agent</title>
+  <link rel="stylesheet" href="/vendor/github-markdown.min.css" />
+  <link rel="stylesheet" href="/style.css" />
+</head>
+
+<body>
+  <main class="shell">
+    <section class="chat-pane">
+      <header class="topbar">
+        <div class="identity">
+          <span class="product-mark">HW</span>
+          <div>
+            <h1>Helloworld Agent</h1>
+            <p id="sessionLabel">Starting session...</p>
+          </div>
+        </div>
+        <div class="turn-controls">
+          <span id="statusLabel" class="status-pill">Idle</span>
+          <button id="stopButton" class="stop-button" disabled title="Stop current turn">
+            Stop
+          </button>
+        </div>
+      </header>
+
+      <div class="stream-stage">
+        <div id="messages" class="messages"></div>
+      </div>
+
+      <form id="promptForm" class="composer">
+        <label class="composer-field">
+          <textarea id="promptInput" rows="3"
+            placeholder="Ask the agent to inspect, fetch, list, or explain..."></textarea>
+        </label>
+        <button id="sendButton" type="submit">Send</button>
+      </form>
+    </section>
+
+    <aside class="side-pane">
+      <section class="panel context-panel">
+        <div class="panel-title">
+          <span>Context</span>
+          <span class="panel-code">window</span>
+        </div>
+        <div class="meter">
+          <div id="contextFill" class="meter-fill"></div>
+        </div>
+        <div id="contextStats" class="stats">未知 / 未知 tokens · 0 messages</div>
+      </section>
+
+      <section class="panel tools-panel">
+        <div class="panel-title">
+          <span>Tools</span>
+          <span class="panel-code">select</span>
+        </div>
+        <div id="tools" class="tools"></div>
+      </section>
+    </aside>
+  </main>
+
+  <script src="/vendor/marked.min.js"></script>
+  <script src="/vendor/purify.min.js"></script>
+  <script src="/app.js"></script>
+</body>
+
+</html>

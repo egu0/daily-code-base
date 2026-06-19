@@ -1,0 +1,375 @@
+const state = {
+  sessionId: null,
+  controller: null,
+  assistantMessages: new Map(),
+  tools: [],
+  toolItems: new Map(),
+  currentReasoning: null,
+  autoScrollEnabled: true,
+};
+
+const AUTO_SCROLL_THRESHOLD = 36;
+
+const els = {
+  sessionLabel: document.querySelector("#sessionLabel"),
+  messages: document.querySelector("#messages"),
+  promptForm: document.querySelector("#promptForm"),
+  promptInput: document.querySelector("#promptInput"),
+  sendButton: document.querySelector("#sendButton"),
+  stopButton: document.querySelector("#stopButton"),
+  statusLabel: document.querySelector("#statusLabel"),
+  tools: document.querySelector("#tools"),
+  contextFill: document.querySelector("#contextFill"),
+  contextStats: document.querySelector("#contextStats"),
+};
+
+if (window.marked) {
+  marked.setOptions({
+    breaks: true,
+    gfm: true,
+  });
+}
+
+function renderMarkdown(text) {
+  if (!window.marked || !window.DOMPurify) {
+    return escapeHtml(text).replaceAll("\n", "<br>");
+  }
+  return DOMPurify.sanitize(marked.parse(text));
+}
+
+function isMessagesNearBottom() {
+  const distanceFromBottom =
+    els.messages.scrollHeight - els.messages.scrollTop - els.messages.clientHeight;
+  return distanceFromBottom <= AUTO_SCROLL_THRESHOLD;
+}
+
+function scrollMessagesToBottom() {
+  if (!state.autoScrollEnabled) return;
+
+  requestAnimationFrame(() => {
+    if (!state.autoScrollEnabled) return;
+    els.messages.scrollTop = els.messages.scrollHeight;
+    requestAnimationFrame(() => {
+      if (!state.autoScrollEnabled) return;
+      els.messages.scrollTop = els.messages.scrollHeight;
+    });
+  });
+}
+
+function scheduleMarkdownRender(content) {
+  if (content.renderFrame) return;
+  content.renderFrame = requestAnimationFrame(() => {
+    content.innerHTML = renderMarkdown(content.markdownText || "");
+    content.renderFrame = null;
+    scrollMessagesToBottom();
+  });
+}
+
+function appendMessage(role, text, messageId = null) {
+  const row = document.createElement("div");
+  row.className = `message-row ${role}`;
+  row.innerHTML = `
+    <div class="message">
+      <div class="content"></div>
+    </div>
+  `;
+  const content = row.querySelector(".content");
+  if (role === "assistant") {
+    content.classList.add("markdown-body");
+    content.markdownText = text;
+    content.innerHTML = renderMarkdown(text);
+  } else {
+    content.textContent = text;
+  }
+  els.messages.appendChild(row);
+  scrollMessagesToBottom();
+  if (messageId) {
+    state.assistantMessages.set(messageId, content);
+  }
+  return row;
+}
+
+function appendAssistantChunk(messageId, text) {
+  let content = state.assistantMessages.get(messageId);
+  if (!content) {
+    content = appendMessage("assistant", "", messageId).querySelector(
+      ".content",
+    );
+  }
+  content.markdownText = (content.markdownText || "") + text;
+  scheduleMarkdownRender(content);
+}
+
+function appendTraceDetails(kind, title, meta = "") {
+  const row = document.createElement("div");
+  row.className = `message-row trace ${kind}`;
+  row.innerHTML = `
+    <details class="trace-details">
+      <summary>
+        <span class="trace-title"></span>
+        <span class="trace-meta"></span>
+      </summary>
+      <div class="trace-body"></div>
+    </details>
+  `;
+  row.querySelector(".trace-title").textContent = title;
+  row.querySelector(".trace-meta").textContent = meta;
+  els.messages.appendChild(row);
+  scrollMessagesToBottom();
+  return {
+    row,
+    details: row.querySelector(".trace-details"),
+    meta: row.querySelector(".trace-meta"),
+    body: row.querySelector(".trace-body"),
+  };
+}
+
+function enabledTools() {
+  return Array.from(
+    els.tools.querySelectorAll("input[type='checkbox']:checked"),
+  ).map((input) => input.value);
+}
+
+function renderTools(tools) {
+  els.tools.innerHTML = "";
+  tools.forEach((tool) => {
+    const label = document.createElement("label");
+    label.className = "tool-row";
+    label.innerHTML = `
+      <input type="checkbox" value="${escapeHtml(tool.name)}" checked />
+      <span>
+        <strong>${escapeHtml(tool.name)}</strong>
+        <span>${escapeHtml(tool.description)}</span>
+      </span>
+    `;
+    els.tools.appendChild(label);
+  });
+}
+
+function setRunning(running) {
+  els.sendButton.disabled = running;
+  els.promptInput.disabled = running;
+  els.stopButton.disabled = !running;
+  if (running) {
+    setStatus("Streaming", "running");
+  }
+}
+
+function setStatus(text, tone = "") {
+  els.statusLabel.textContent = text;
+  els.statusLabel.className = `status-pill ${tone}`.trim();
+}
+
+function ensureToolItem(toolCallId, name = "tool", args = {}) {
+  let item = state.toolItems.get(toolCallId);
+  if (item) return item;
+
+  const trace = appendTraceDetails("tool", `Tool call: ${name}`, "pending");
+  trace.body.innerHTML = `
+    <div class="trace-section">Arguments</div>
+    <pre class="args"></pre>
+    <div class="trace-section result-label" hidden>Result</div>
+    <pre class="result"></pre>
+  `;
+  trace.body.querySelector(".args").textContent = JSON.stringify(args, null, 2);
+  item = {
+    row: trace.row,
+    status: trace.meta,
+    result: trace.body.querySelector(".result"),
+    resultLabel: trace.body.querySelector(".result-label"),
+  };
+  state.toolItems.set(toolCallId, item);
+  return item;
+}
+
+function updateTool(data) {
+  const item = ensureToolItem(data.toolCallId, data.name, data.args);
+  if (data.status) {
+    item.status.textContent = data.status;
+    item.row.dataset.status = data.status;
+    if (data.status === "in_progress") {
+      setStatus("Tool running", "running");
+    }
+  }
+  if (data.result !== undefined) {
+    item.result.textContent = data.result;
+    item.resultLabel.hidden = false;
+  }
+}
+
+function appendReasoning(text) {
+  if (!state.currentReasoning) {
+    state.currentReasoning = appendTraceDetails(
+      "reasoning",
+      "Reasoning",
+      "stream",
+    );
+  }
+  state.currentReasoning.body.textContent += text;
+  scrollMessagesToBottom();
+}
+
+function formatTokenCount(value) {
+  if (value === null || value === undefined) return "未知";
+  return Number(value).toLocaleString();
+}
+
+function updateUsage(data) {
+  const used = data.used;
+  const size = data.size;
+  const hasUsage = used !== null && used !== undefined;
+  const hasWindow = size !== null && size !== undefined;
+
+  if (hasUsage && hasWindow && size > 0) {
+    const percent = Math.min(100, Math.round((used / size) * 100));
+    els.contextFill.style.width = `${percent}%`;
+  } else {
+    els.contextFill.style.width = "0%";
+  }
+
+  els.contextStats.textContent = `${formatTokenCount(used)} / ${formatTokenCount(size)} tokens · ${data.messageCount || 0} messages`;
+}
+
+function handleEvent(item) {
+  const { event, data } = item;
+  if (event === "agent_message_chunk") {
+    setStatus("Streaming", "running");
+    appendAssistantChunk(data.messageId, data.text);
+  } else if (event === "reasoning_chunk") {
+    setStatus("Reasoning", "running");
+    appendReasoning(data.text);
+  } else if (event === "tool_call" || event === "tool_call_update") {
+    updateTool(data);
+  } else if (event === "usage_update") {
+    updateUsage(data);
+  } else if (event === "error") {
+    setStatus("Error", "error");
+    appendMessage("assistant", `Error: ${data.message}`);
+  } else if (event === "turn_done") {
+    setStatus(data.stopReason === "cancelled" ? "Cancelled" : "Idle");
+    setRunning(false);
+  }
+}
+
+async function readNdjson(response) {
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop();
+    for (const line of lines) {
+      if (!line.trim()) continue;
+      handleEvent(JSON.parse(line));
+    }
+  }
+
+  if (buffer.trim()) {
+    handleEvent(JSON.parse(buffer));
+  }
+}
+
+async function sendPrompt(prompt) {
+  state.autoScrollEnabled = true;
+  appendMessage("user", prompt);
+  state.toolItems.clear();
+  state.currentReasoning = null;
+  state.controller = new AbortController();
+  setRunning(true);
+
+  try {
+    const response = await fetch(
+      `/api/sessions/${state.sessionId}/prompt/stream`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt, enabledTools: enabledTools() }),
+        signal: state.controller.signal,
+      },
+    );
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || response.statusText);
+    }
+    await readNdjson(response);
+  } catch (error) {
+    if (error.name !== "AbortError") {
+      setStatus("Error", "error");
+      appendMessage("assistant", `Error: ${error.message}`);
+    }
+  } finally {
+    setRunning(false);
+    state.controller = null;
+    if (
+      !els.statusLabel.classList.contains("error") &&
+      els.statusLabel.textContent !== "Cancelled"
+    ) {
+      setStatus("Idle");
+    }
+  }
+}
+
+async function stopTurn() {
+  if (state.controller) {
+    state.controller.abort();
+  }
+  setStatus("Cancelling", "running");
+  await fetch(`/api/sessions/${state.sessionId}/cancel`, { method: "POST" });
+  setRunning(false);
+  setStatus("Cancelled");
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+async function init() {
+  const sessionResp = await fetch("/api/sessions", { method: "POST" });
+  const session = await sessionResp.json();
+  state.sessionId = session.sessionId;
+  els.sessionLabel.textContent = state.sessionId;
+
+  const toolsResp = await fetch("/api/tools");
+  const toolsPayload = await toolsResp.json();
+  state.tools = toolsPayload.tools;
+  renderTools(state.tools);
+}
+
+els.promptForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const prompt = els.promptInput.value.trim();
+  if (!prompt) return;
+  els.promptInput.value = "";
+  sendPrompt(prompt);
+});
+
+els.promptInput.addEventListener("keydown", (event) => {
+  if (event.key === "Enter" && !event.shiftKey) {
+    event.preventDefault();
+    els.promptForm.requestSubmit();
+  }
+});
+
+els.messages.addEventListener(
+  "scroll",
+  () => {
+    state.autoScrollEnabled = isMessagesNearBottom();
+  },
+  { passive: true },
+);
+
+els.stopButton.addEventListener("click", stopTurn);
+
+init().catch((error) => {
+  els.sessionLabel.textContent = "Failed to start";
+  appendMessage("assistant", `Error: ${error.message}`);
+});

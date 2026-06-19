@@ -4,6 +4,7 @@ Quickstart:
 
 ```bash
 uv run -m helloworld.main
+uv run -m helloworld.app
 uv run --with jupyter jupyter lab
 ```
 

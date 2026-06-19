@@ -14,3 +14,8 @@ dependencies = [
     "python-dotenv>=1.2.2",
     "tavily-python>=0.7.26",
 ]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.0",
+]

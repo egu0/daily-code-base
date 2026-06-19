@@ -6,6 +6,7 @@ import json
 import sys
 from .tools import tools_map, tool_schemas
 from prompt_toolkit import PromptSession
+from datetime import datetime
 
 logger.remove(0)
 logger.add(
@@ -14,17 +15,34 @@ logger.add(
 
 load_dotenv()
 
-client = OpenAI(
-    base_url="https://openrouter.ai/api/v1", api_key=os.getenv("OPENROUTER_KEY")
-)
-MODEL = "deepseek/deepseek-v4-flash"
+models_context_ = {"deepseek-v4-flash": 1000_000, "deepseek-v4-pro": 1000_000}
+
+client = OpenAI(base_url="https://api.deepseek.com/", api_key=os.getenv("DEEPSEEK_KEY"))
+MODEL = "deepseek-v4-flash"
+MAX_CONTEXT_MESSAGES = 20
 
 messages = [
     {
         "role": "system",
-        "content": "You are a helpful agent. Use tools when needed.",
+        "content": f"You are a helpful agent. Use tools when needed. If needed, current time is ${datetime.now()}",
     }
 ]
+
+
+def trim_messages():
+    if len(messages) <= MAX_CONTEXT_MESSAGES:
+        return
+
+    system_messages = [msg for msg in messages if msg.get("role") == "system"]
+    non_system_messages = [msg for msg in messages if msg.get("role") != "system"]
+    keep_count = MAX_CONTEXT_MESSAGES - len(system_messages)
+    recent_messages = non_system_messages[-keep_count:]
+
+    # 把开头的 tool 类型消息去掉，避免上下文第一条变成孤立的 tool 消息
+    while recent_messages and recent_messages[0].get("role") == "tool":
+        recent_messages.pop(0)
+
+    messages[:] = system_messages + recent_messages
 
 
 def run():
@@ -34,6 +52,7 @@ def run():
         if len("".join(user_input.split())) == 0:
             continue
         messages.append({"role": "user", "content": user_input})
+        trim_messages()
 
         while True:
             # 请求 LLM
@@ -51,8 +70,9 @@ def run():
 
             # 没有更多调用时说明任务结束
             if not msg.tool_calls:
-                print(f"\nAgent:\n{msg.content}\n\n------------------------")
+                print(f"Agent:\n{msg.content}\n------------------------")
                 messages.append({"role": "assistant", "content": msg.content})
+                trim_messages()
                 break
 
             # 将 LLM 返回信息拼接起来（context + 要使用的 tools）
@@ -61,7 +81,6 @@ def run():
                     "role": "assistant",
                     "content": msg.content or "",
                     "tool_calls": [
-                        # 所有要用到的工具信息
                         {
                             "id": tc.id,
                             "type": "function",
@@ -70,12 +89,11 @@ def run():
                                 "arguments": tc.function.arguments,
                             },
                         }
-                        for tc in msg.tool_calls
+                        for tc in msg.tool_calls  # 列表推导式子
                     ],
                 }
             )
 
-            # 本地工具调用
             for tc in msg.tool_calls:
                 name = tc.function.name
                 args = json.loads(tc.function.arguments)
@@ -89,6 +107,7 @@ def run():
                 messages.append(
                     {"role": "tool", "tool_call_id": tc.id, "content": str(result)}
                 )
+            trim_messages()
 
 
 if __name__ == "__main__":
