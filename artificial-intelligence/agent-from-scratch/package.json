@@ -1,6 +1,21 @@
 {
+  "type": "module",
+  "packageManager": "pnpm@11.8.0",
+  "scripts": {
+    "start": "tsx main.ts",
+    "ts": "tsx",
+    "typecheck": "tsc --noEmit",
+    "app:01": "tsx app01-first-agent.ts",
+    "app:02": "tsx app02-using-tool.ts",
+    "app:14": "tsx app14-local-code-review-agent.ts"
+  },
   "dependencies": {
     "@openai/agents": "^0.11.6",
     "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.3",
+    "tsx": "^4.22.4",
+    "typescript": "^6.0.3"
   }
 }
