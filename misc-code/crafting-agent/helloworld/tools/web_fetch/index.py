@@ -3,7 +3,7 @@ import os
 import urllib.request
 import urllib.error
 
-MAX_CONTENT_LENGTH = 8000
+MAX_CONTENT_LENGTH = 3000
 
 
 def web_fetch(urls, max_chars=MAX_CONTENT_LENGTH):
@@ -80,7 +80,7 @@ schema = {
                 },
                 "max_chars": {
                     "type": "integer",
-                    "description": "Max characters per extracted page (default 8000). Content beyond this is truncated with a note. Set to 0 for unlimited.",
+                    "description": "Max characters per extracted page (default 3000). Content beyond this is truncated with a note. Set to 0 for unlimited.",
                 },
             },
             "required": ["urls"],

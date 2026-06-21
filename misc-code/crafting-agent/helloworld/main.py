@@ -56,15 +56,14 @@ def run():
 
         while True:
             # 请求 LLM
-            logger.debug("👀 开始请求大语言模型...")
+            logger.debug("👀 Ruquesting..")
             resp = client.chat.completions.create(
                 model=MODEL,
                 messages=messages,
                 tools=tool_schemas,
             )
-            cost = getattr(resp.usage, "cost", 0.0)
             logger.debug(
-                f"💰 请求结束。调用数据: in {resp.usage.prompt_tokens}, out {resp.usage.completion_tokens}, cost ${cost:.6f}"
+                f"💰 Done. Costed tokens: in {resp.usage.prompt_tokens}, out {resp.usage.completion_tokens}"
             )
             msg = resp.choices[0].message
 
