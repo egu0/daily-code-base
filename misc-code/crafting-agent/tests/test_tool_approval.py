@@ -11,6 +11,7 @@ from helloworld.agent import (  # noqa: E402
     create_tool_approval,
     resolve_tool_approval,
     session_payload,
+    tool_is_enabled,
     wait_for_tool_approval,
 )
 
@@ -68,3 +69,11 @@ def test_session_payload_includes_pending_tool_approvals():
     assert payload["pendingToolApprovals"] == [
         {"toolCallId": "call_1", "name": "read", "args": {"path": "."}}
     ]
+
+
+def test_tool_is_enabled_rejects_disabled_tool():
+    assert tool_is_enabled("write", ["read", "apply_patch"]) is False
+
+
+def test_tool_is_enabled_allows_enabled_tool():
+    assert tool_is_enabled("write", ["read", "write"]) is True

@@ -4,7 +4,7 @@ const state = {
   assistantMessages: new Map(),
   tools: [],
   toolItems: new Map(),
-  currentReasoning: null,
+  reasoningItems: new Map(),
   autoScrollEnabled: true,
 };
 
@@ -94,7 +94,7 @@ function clearMessages() {
   els.messages.innerHTML = "";
   state.assistantMessages.clear();
   state.toolItems.clear();
-  state.currentReasoning = null;
+  state.reasoningItems.clear();
 }
 
 function appendAssistantChunk(messageId, text) {
@@ -383,15 +383,18 @@ function renderPendingToolApprovals(pendingToolApprovals = []) {
   });
 }
 
-function appendReasoning(text) {
-  if (!state.currentReasoning) {
-    state.currentReasoning = appendTraceDetails(
+function appendReasoning(messageId, text) {
+  const key = messageId || "reasoning";
+  let reasoning = state.reasoningItems.get(key);
+  if (!reasoning) {
+    reasoning = appendTraceDetails(
       "reasoning",
       "Reasoning",
       "stream",
     );
+    state.reasoningItems.set(key, reasoning);
   }
-  state.currentReasoning.body.textContent += text;
+  reasoning.body.textContent += text;
   scrollMessagesToBottom();
 }
 
@@ -423,7 +426,7 @@ function handleEvent(item) {
     appendAssistantChunk(data.messageId, data.text);
   } else if (event === "reasoning_chunk") {
     setStatus("Reasoning", "running");
-    appendReasoning(data.text);
+    appendReasoning(data.messageId, data.text);
   } else if (event === "tool_call" || event === "tool_call_update") {
     updateTool(data);
   } else if (event === "usage_update") {
@@ -463,7 +466,7 @@ async function sendPrompt(prompt) {
   state.autoScrollEnabled = true;
   appendMessage("user", prompt);
   state.toolItems.clear();
-  state.currentReasoning = null;
+  state.reasoningItems.clear();
   state.controller = new AbortController();
   setRunning(true);
 

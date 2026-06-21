@@ -98,6 +98,23 @@ def save_session(session: SessionState) -> None:
     tmp_path.replace(path)
 
 
+def log_chat_completion(session_id: str, request: dict, response: dict) -> None:
+    """Save each chat-completion request/response pair as N.json under the session dir."""
+    directory = session_dir(session_id)
+    directory.mkdir(parents=True, exist_ok=True)
+    existing = [
+        int(f.stem)
+        for f in directory.glob("*.json")
+        if f.name != "session.json" and f.stem.isdigit()
+    ]
+    next_num = max(existing, default=0) + 1
+    log_path = directory / f"{next_num}.json"
+    log_path.write_text(
+        json.dumps({"request": request, "response": response}, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+
+
 def load_session(session_id: str) -> SessionState | None:
     if not validate_session_id(session_id):
         return None
@@ -241,6 +258,10 @@ def select_tool_schemas(enabled_tools: list[str]) -> list[dict]:
     return [schema for schema in tool_schemas if schema["function"]["name"] in enabled]
 
 
+def tool_is_enabled(name: str, enabled_tools: list[str]) -> bool:
+    return name in set(enabled_tools)
+
+
 def event(event_type: str, data: dict) -> dict:
     return {"event": event_type, "data": data}
 
@@ -329,6 +350,7 @@ def stream_prompt(
 ):
     session.cancel_event.clear()
     with session.lock:
+        session.enabled_tools = enabled_tools
         session.messages.append({"role": "user", "content": prompt})
         save_session(session)
         yield usage_event(session)
@@ -421,6 +443,12 @@ def stream_prompt(
         if tool_calls:
             assistant_message["tool_calls"] = tool_calls
 
+        log_chat_completion(
+            session.id,
+            {"messages": list(session.messages), "tools": selected_schemas},
+            assistant_message,
+        )
+
         with session.lock:
             session.messages.append(assistant_message)
             save_session(session)
@@ -447,34 +475,38 @@ def stream_prompt(
                 result = f"Error: invalid tool arguments JSON: {exc}"
                 status = "failed"
             else:
-                create_tool_approval(session, call_id, name, args)
-                yield event(
-                    "tool_call",
-                    {
-                        "toolCallId": call_id,
-                        "name": name,
-                        "args": args,
-                        "status": "pending_approval",
-                    },
-                )
-                approved = wait_for_tool_approval(session, call_id)
-                if approved is None:
-                    yield event("turn_done", {"stopReason": "cancelled"})
-                    return
-                if not approved:
-                    result = "Tool call denied by user"
-                    status = "denied"
+                if not tool_is_enabled(name, enabled_tools):
+                    result = f"Error: tool '{name}' is disabled"
+                    status = "failed"
                 else:
+                    create_tool_approval(session, call_id, name, args)
                     yield event(
-                        "tool_call_update",
-                        {"toolCallId": call_id, "status": "in_progress"},
+                        "tool_call",
+                        {
+                            "toolCallId": call_id,
+                            "name": name,
+                            "args": args,
+                            "status": "pending_approval",
+                        },
                     )
-                    try:
-                        result = tools_map[name](**args)
-                        status = "completed"
-                    except Exception as exc:
-                        result = f"Error: {exc}"
-                        status = "failed"
+                    approved = wait_for_tool_approval(session, call_id)
+                    if approved is None:
+                        yield event("turn_done", {"stopReason": "cancelled"})
+                        return
+                    if not approved:
+                        result = "Tool call denied by user"
+                        status = "denied"
+                    else:
+                        yield event(
+                            "tool_call_update",
+                            {"toolCallId": call_id, "status": "in_progress"},
+                        )
+                        try:
+                            result = tools_map[name](**args)
+                            status = "completed"
+                        except Exception as exc:
+                            result = f"Error: {exc}"
+                            status = "failed"
 
             yield event(
                 "tool_call_update",
