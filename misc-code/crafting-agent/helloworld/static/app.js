@@ -108,11 +108,29 @@ function appendAssistantChunk(messageId, text) {
   scheduleMarkdownRender(content);
 }
 
-function appendTraceDetails(kind, title, meta = "") {
+function setDetailsOpen(details, open) {
+  details.open = open;
+  if (open) {
+    details.setAttribute("open", "");
+  } else {
+    details.removeAttribute("open");
+  }
+}
+
+function setElementHidden(element, hidden) {
+  element.hidden = hidden;
+  if (hidden) {
+    element.setAttribute("hidden", "");
+  } else {
+    element.removeAttribute("hidden");
+  }
+}
+
+function appendTraceDetails(kind, title, meta = "", initiallyOpen = false) {
   const row = document.createElement("div");
   row.className = `message-row trace ${kind}`;
   row.innerHTML = `
-    <details class="trace-details">
+    <details class="trace-details" ${initiallyOpen ? "open" : ""}>
       <summary>
         <span class="trace-title"></span>
         <span class="trace-meta"></span>
@@ -186,17 +204,35 @@ function ensureToolItem(toolCallId, name = "tool", args = {}) {
   let item = state.toolItems.get(toolCallId);
   if (item) return item;
 
-  const trace = appendTraceDetails("tool", `Tool call: ${name}`, "pending");
+  const trace = appendTraceDetails("tool", `Tool call: ${name}`, "pending", true);
+  setDetailsOpen(trace.details, true);
   trace.body.innerHTML = `
     <div class="trace-section">Arguments</div>
     <pre class="args"></pre>
+    <div class="approval-actions">
+      <button class="approval-button allow" type="button">Allow</button>
+      <button class="approval-button deny" type="button">Deny</button>
+    </div>
     <div class="trace-section result-label" hidden>Result</div>
     <pre class="result"></pre>
   `;
   trace.body.querySelector(".args").textContent = JSON.stringify(args, null, 2);
+  const approvalActions = trace.body.querySelector(".approval-actions");
+  const allowButton = trace.body.querySelector(".approval-button.allow");
+  const denyButton = trace.body.querySelector(".approval-button.deny");
+  allowButton.addEventListener("click", () => {
+    submitToolApproval(toolCallId, true, approvalActions);
+  });
+  denyButton.addEventListener("click", () => {
+    submitToolApproval(toolCallId, false, approvalActions);
+  });
   item = {
     row: trace.row,
+    details: trace.details,
     status: trace.meta,
+    approvalActions,
+    allowButton,
+    denyButton,
     result: trace.body.querySelector(".result"),
     resultLabel: trace.body.querySelector(".result-label"),
   };
@@ -204,11 +240,59 @@ function ensureToolItem(toolCallId, name = "tool", args = {}) {
   return item;
 }
 
+async function submitToolApproval(toolCallId, approved, approvalActions) {
+  const item = state.toolItems.get(toolCallId);
+  if (!item) return;
+
+  item.allowButton.disabled = true;
+  item.denyButton.disabled = true;
+  item.status.textContent = approved ? "approving" : "denying";
+  setStatus("Approving tool", "running");
+
+  try {
+    const response = await fetch(`/api/sessions/${state.sessionId}/tool-approval`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ toolCallId, approved }),
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || response.statusText);
+    }
+    setElementHidden(approvalActions, true);
+    setDetailsOpen(item.details, false);
+  } catch (error) {
+    item.allowButton.disabled = false;
+    item.denyButton.disabled = false;
+    setDetailsOpen(item.details, true);
+    item.status.textContent = "approval_error";
+    item.result.textContent = `Error: ${error.message}`;
+    item.resultLabel.hidden = false;
+    setStatus("Error", "error");
+  }
+}
+
 function updateTool(data) {
   const item = ensureToolItem(data.toolCallId, data.name, data.args);
   if (data.status) {
     item.status.textContent = data.status;
     item.row.dataset.status = data.status;
+    if (data.status === "pending" || data.status === "pending_approval") {
+      setDetailsOpen(item.details, true);
+      setElementHidden(item.approvalActions, false);
+      item.allowButton.disabled = false;
+      item.denyButton.disabled = false;
+      setStatus("Awaiting approval", "running");
+    } else {
+      setElementHidden(item.approvalActions, true);
+      if (
+        data.status === "in_progress" ||
+        data.status === "completed" ||
+        data.status === "denied"
+      ) {
+        setDetailsOpen(item.details, false);
+      }
+    }
     if (data.status === "in_progress") {
       setStatus("Tool running", "running");
     }
@@ -228,13 +312,23 @@ function parseToolArgs(rawArgs) {
   }
 }
 
-function appendToolCallsFromMessage(message) {
+function appendToolCallsFromMessage(
+  message,
+  completedToolCallIds = new Set(),
+  pendingToolCallIds = new Set(),
+) {
   (message.tool_calls || []).forEach((toolCall) => {
+    let status = "in_progress";
+    if (completedToolCallIds.has(toolCall.id)) {
+      status = "completed";
+    } else if (pendingToolCallIds.has(toolCall.id)) {
+      status = "pending_approval";
+    }
     updateTool({
       toolCallId: toolCall.id,
       name: toolCall.function?.name || "tool",
       args: parseToolArgs(toolCall.function?.arguments),
-      status: "completed",
+      status,
     });
   });
 }
@@ -247,9 +341,15 @@ function appendToolResultFromMessage(message) {
   });
 }
 
-function renderHistory(messages) {
+function renderHistory(messages, options = {}) {
   clearMessages();
-  state.autoScrollEnabled = true;
+  state.autoScrollEnabled = options.autoScroll !== false;
+  const pendingToolCallIds = options.pendingToolCallIds || new Set();
+  const completedToolCallIds = new Set(
+    messages
+      .filter((message) => message.role === "tool" && message.tool_call_id)
+      .map((message) => message.tool_call_id),
+  );
 
   messages.forEach((message) => {
     if (message.role === "system") return;
@@ -263,13 +363,24 @@ function renderHistory(messages) {
       if (message.content) {
         appendMessage("assistant", message.content);
       }
-      appendToolCallsFromMessage(message);
+      appendToolCallsFromMessage(message, completedToolCallIds, pendingToolCallIds);
     } else if (message.role === "tool") {
       appendToolResultFromMessage(message);
     }
   });
 
   scrollMessagesToBottom();
+}
+
+function renderPendingToolApprovals(pendingToolApprovals = []) {
+  pendingToolApprovals.forEach((approval) => {
+    updateTool({
+      toolCallId: approval.toolCallId,
+      name: approval.name || "tool",
+      args: approval.args || {},
+      status: "pending_approval",
+    });
+  });
 }
 
 function appendReasoning(text) {
@@ -413,12 +524,19 @@ function currentSessionIdFromUrl() {
   return pathMatch ? decodeURIComponent(pathMatch[1]) : null;
 }
 
-function setSession(session) {
+function setSession(session, options = {}) {
   state.sessionId = session.sessionId;
   els.sessionLabel.textContent = state.sessionId;
-  renderHistory(session.messages || []);
+  const pendingToolCallIds = new Set(
+    (session.pendingToolApprovals || []).map((approval) => approval.toolCallId),
+  );
+  renderHistory(session.messages || [], {
+    autoScroll: options.autoScroll,
+    pendingToolCallIds,
+  });
+  renderPendingToolApprovals(session.pendingToolApprovals || []);
   updateUsage(session.usage || {});
-  if (state.tools.length > 0) {
+  if (state.tools.length > 0 && !options.preserveToolSelection) {
     renderTools(state.tools, session.enabledTools);
   }
 }

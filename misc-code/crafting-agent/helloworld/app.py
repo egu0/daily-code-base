@@ -5,6 +5,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 from .agent import (
+    approve_tool_call,
     available_tools,
     cancel_session,
     create_session,
@@ -27,6 +28,10 @@ class Handler(SimpleHTTPRequestHandler):
 
     def log_message(self, fmt, *args):
         print(f"{self.address_string()} - {fmt % args}")
+
+    def end_headers(self):
+        self.send_header("Cache-Control", "no-cache")
+        super().end_headers()
 
     def do_GET(self):
         path = urlparse(self.path).path
@@ -77,6 +82,24 @@ class Handler(SimpleHTTPRequestHandler):
             )
             return
 
+        if path.endswith("/tool-approval") and path.startswith("/api/sessions/"):
+            session_id = path.split("/")[3]
+            body = self.read_json_body()
+            tool_call_id = body.get("toolCallId", "")
+            approved = body.get("approved")
+            if not isinstance(tool_call_id, str) or not tool_call_id:
+                self.send_json({"error": "toolCallId is required"}, HTTPStatus.BAD_REQUEST)
+                return
+            if not isinstance(approved, bool):
+                self.send_json({"error": "approved must be a boolean"}, HTTPStatus.BAD_REQUEST)
+                return
+            updated = approve_tool_call(session_id, tool_call_id, approved)
+            self.send_json(
+                {"updated": updated},
+                HTTPStatus.OK if updated else HTTPStatus.NOT_FOUND,
+            )
+            return
+
         if path.endswith("/prompt/stream") and path.startswith("/api/sessions/"):
             session_id = path.split("/")[3]
             session = get_session(session_id)
@@ -115,6 +138,7 @@ class Handler(SimpleHTTPRequestHandler):
     def stream_events(self, session, prompt, enabled_tools):
         self.send_response(HTTPStatus.OK)
         self.send_header("Content-Type", "application/x-ndjson; charset=utf-8")
+        self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("Cache-Control", "no-cache")
         self.send_header("Connection", "close")
         self.end_headers()

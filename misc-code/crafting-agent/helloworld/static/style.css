@@ -552,6 +552,41 @@ button:disabled {
   text-transform: uppercase;
 }
 
+.approval-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0 2px;
+}
+
+.approval-actions[hidden] {
+  display: none;
+}
+
+.approval-button {
+  min-width: 76px;
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 7px;
+  font-size: 12px;
+}
+
+.approval-button.allow {
+  background: var(--green);
+}
+
+.approval-button.allow:hover:not(:disabled) {
+  background: #1f563b;
+}
+
+.approval-button.deny {
+  background: var(--signal);
+}
+
+.approval-button.deny:hover:not(:disabled) {
+  background: #bf3f21;
+}
+
 pre {
   max-height: 210px;
   margin: 9px 0 0;
