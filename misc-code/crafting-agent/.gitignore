@@ -9,3 +9,4 @@ helloworld/data/
 helloworld/sessions/
 .pytest_cache
 docs/
+.superpowers/

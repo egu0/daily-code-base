@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 
-BASE_DIR = Path.home() / ".helloworld" / "processes"
+BASE_DIR = Path("/tmp/.helloworld/processes")
 MAX_OUTPUT_LINES = 10_000  # cap per log file
 
 
