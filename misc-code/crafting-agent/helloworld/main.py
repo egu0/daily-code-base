@@ -17,6 +17,7 @@ from .session_store import (
 )
 from datetime import datetime
 import argparse
+from .tools.background_process.manager import close_process_manager
 
 LOG_FORMAT = "<level>{message}</level>"
 ANSI_DIM = "\033[2m"
@@ -312,6 +313,7 @@ def run(argv=None):
                     persist_messages(chat_session)
     finally:
         mcp_registry.close()
+        close_process_manager()
 
 
 if __name__ == "__main__":
