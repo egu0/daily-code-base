@@ -4,6 +4,7 @@ from openai import OpenAI
 from loguru import logger
 import json
 import sys
+from prompt_toolkit import prompt as pt_prompt
 from .tools import tools_map, tool_schemas
 from .mcp_runtime import MCPToolRegistry, load_default_mcp_registry
 from .session_store import (
@@ -139,8 +140,8 @@ def format_tool_approval_prompt(name, args):
     return f"Approve tool call {name}({format_tool_args(args)})? [Y/n]: "
 
 
-def approve_tool_call(name, args, input_fn=input):
-    answer = input_fn(format_tool_approval_prompt(name, args)).strip().lower()
+def approve_tool_call(name, args, input_fn=None):
+    answer = (input_fn or (lambda p: pt_prompt(p)))(format_tool_approval_prompt(name, args)).strip().lower()
     return answer not in {"n", "no"}
 
 
@@ -148,7 +149,7 @@ def execute_tool_with_approval(
     name,
     args,
     mcp_registry: MCPToolRegistry | None = None,
-    input_fn=input,
+    input_fn=None,
 ):
     if not approve_tool_call(name, args, input_fn):
         return "Tool call rejected by user"
@@ -223,7 +224,16 @@ def completion_response_to_json(resp):
     }
 
 
-def prompt_user(input_fn=input) -> str:
+def prompt_user(input_fn=None) -> str:
+    if input_fn is None:
+        try:
+            return pt_prompt("You: ").strip()
+        except KeyboardInterrupt:
+            print("\nGoodbye!")
+            # os._exit avoids "Task exception was never retrieved"
+            # warnings from prompt_toolkit's asyncio event loop
+            # when combined with nest_asyncio.
+            os._exit(0)
     return input_fn("You: ").strip()
 
 

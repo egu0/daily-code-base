@@ -10,3 +10,4 @@ helloworld/sessions/
 .pytest_cache
 docs/
 .superpowers/
+node_modules/
