@@ -6,4 +6,6 @@
 .env
 .ipynb_checkpoints/
 helloworld/data/
+helloworld/sessions/
 .pytest_cache
+docs/
