@@ -4,7 +4,6 @@ import secrets
 import signal
 import subprocess
 import threading
-import time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -36,7 +35,7 @@ def _format_duration(start_iso: str) -> str:
 class ProcessManager:
     def __init__(self) -> None:
         BASE_DIR.mkdir(parents=True, exist_ok=True)
-        self._lock = threading.Lock()
+        self._lock = threading.RLock()
         self._registry_path = BASE_DIR / "registry.json"
         self._processes: dict[str, dict] = {}
         self._popen_objects: dict[str, subprocess.Popen] = {}
@@ -70,16 +69,17 @@ class ProcessManager:
             return False
 
     def _clean_stale(self) -> None:
-        changed = False
-        for proc_id, info in list(self._processes.items()):
-            if info.get("status") == "running":
-                pid = info.get("pid")
-                if pid is not None and not self._is_pid_alive(pid):
-                    info["status"] = "dead"
-                    info["exit_code"] = None
-                    changed = True
-        if changed:
-            self._save_registry()
+        with self._lock:
+            changed = False
+            for proc_id, info in list(self._processes.items()):
+                if info.get("status") == "running":
+                    pid = info.get("pid")
+                    if pid is not None and not self._is_pid_alive(pid):
+                        info["status"] = "dead"
+                        info["exit_code"] = None
+                        changed = True
+            if changed:
+                self._save_registry()
 
     # --- start ---------------------------------------------------------------
 
@@ -123,7 +123,7 @@ class ProcessManager:
         with self._lock:
             self._processes[proc_id] = info
             self._popen_objects[proc_id] = popen
-        self._save_registry()
+            self._save_registry()
 
         # spawn reader threads
         threading.Thread(
@@ -182,25 +182,27 @@ class ProcessManager:
                     info["status"] = "exited"
                     info["exit_code"] = exit_code
             self._popen_objects.pop(proc_id, None)
-        self._save_registry()
+            self._save_registry()
 
     # --- stop ----------------------------------------------------------------
 
     def stop(self, process_id: str) -> str:
-        info = self._processes.get(process_id)
-        if info is None:
-            return f"Error: no process with id '{process_id}'"
+        with self._lock:
+            info = self._processes.get(process_id)
+            if info is None:
+                return f"Error: no process with id '{process_id}'"
 
-        if info.get("status") != "running":
-            return f"Error: process '{process_id}' is not running (status: {info.get('status')})"
+            if info.get("status") != "running":
+                return f"Error: process '{process_id}' is not running (status: {info.get('status')})"
 
-        popen = self._popen_objects.get(process_id)
-        if popen is None:
-            info["status"] = "dead"
-            self._save_registry()
-            return f"Error: process '{process_id}' has no active Popen handle (marked as dead)"
+            popen = self._popen_objects.get(process_id)
+            if popen is None:
+                info["status"] = "dead"
+                self._save_registry()
+                return f"Error: process '{process_id}' has no active Popen handle (marked as dead)"
 
-        pid = info["pid"]
+            pid = info["pid"]
+
         try:
             os.killpg(os.getpgid(popen.pid), signal.SIGTERM)
             try:
@@ -211,41 +213,44 @@ class ProcessManager:
         except (OSError, ProcessLookupError):
             pass
 
+        returncode = popen.returncode if popen.returncode is not None else -1
+
         with self._lock:
             if process_id in self._processes:
                 self._processes[process_id]["status"] = "exited"
-                self._processes[process_id]["exit_code"] = popen.returncode
-        self._save_registry()
+                self._processes[process_id]["exit_code"] = returncode
+            self._save_registry()
 
-        return f"Process {process_id} stopped (exit code: {popen.returncode})"
+        return f"Process {process_id} stopped (exit code: {returncode})"
 
     # --- status --------------------------------------------------------------
 
     def status(self, process_id: str) -> str:
-        info = self._processes.get(process_id)
-        if info is None:
-            return f"Error: no process with id '{process_id}'"
+        with self._lock:
+            info = self._processes.get(process_id)
+            if info is None:
+                return f"Error: no process with id '{process_id}'"
 
-        if info.get("status") == "running":
-            pid = info.get("pid")
-            if pid is not None and not self._is_pid_alive(pid):
-                info["status"] = "dead"
-                self._save_registry()
+            if info.get("status") == "running":
+                pid = info.get("pid")
+                if pid is not None and not self._is_pid_alive(pid):
+                    info["status"] = "dead"
+                    self._save_registry()
 
-        runtime = _format_duration(info["start_time"])
-        exit_code = info.get("exit_code")
+            runtime = _format_duration(info["start_time"])
+            exit_code = info.get("exit_code")
 
-        lines = [
-            f"Process {process_id}:",
-            f"  command: {info['command']}",
-            f"  cwd: {info['cwd']}",
-            f"  pid: {info['pid']}",
-            f"  status: {info['status']}",
-            f"  started: {info['start_time']}",
-            f"  runtime: {runtime}",
-        ]
-        if exit_code is not None:
-            lines.append(f"  exit_code: {exit_code}")
+            lines = [
+                f"Process {process_id}:",
+                f"  command: {info['command']}",
+                f"  cwd: {info['cwd']}",
+                f"  pid: {info['pid']}",
+                f"  status: {info['status']}",
+                f"  started: {info['start_time']}",
+                f"  runtime: {runtime}",
+            ]
+            if exit_code is not None:
+                lines.append(f"  exit_code: {exit_code}")
 
         return "\n".join(lines)
 
@@ -255,7 +260,8 @@ class ProcessManager:
         if stream not in ("stdout", "stderr", "both"):
             return "Error: stream must be 'stdout', 'stderr', or 'both'"
 
-        info = self._processes.get(process_id)
+        with self._lock:
+            info = self._processes.get(process_id)
         if info is None:
             return f"Error: no process with id '{process_id}'"
 
@@ -292,17 +298,19 @@ class ProcessManager:
     # --- send_input ----------------------------------------------------------
 
     def send_input(self, process_id: str, text: str) -> str:
-        info = self._processes.get(process_id)
-        if info is None:
-            return f"Error: no process with id '{process_id}'"
+        with self._lock:
+            info = self._processes.get(process_id)
+            if info is None:
+                return f"Error: no process with id '{process_id}'"
 
-        if info.get("status") != "running":
-            return (
-                f"Error: process '{process_id}' is not running "
-                f"(status: {info.get('status')})"
-            )
+            if info.get("status") != "running":
+                return (
+                    f"Error: process '{process_id}' is not running "
+                    f"(status: {info.get('status')})"
+                )
 
-        popen = self._popen_objects.get(process_id)
+            popen = self._popen_objects.get(process_id)
+
         if popen is None or popen.stdin is None or popen.stdin.closed:
             return f"Error: stdin is not available for process '{process_id}'"
 
@@ -317,11 +325,14 @@ class ProcessManager:
     # --- list_all ------------------------------------------------------------
 
     def list_all(self) -> str:
-        if not self._processes:
-            return "No background processes"
+        with self._lock:
+            if not self._processes:
+                return "No background processes"
 
-        lines = [f"{len(self._processes)} background process(es):"]
-        for proc_id, info in sorted(self._processes.items()):
+            items = list(self._processes.items())
+
+        lines = [f"{len(items)} background process(es):"]
+        for proc_id, info in sorted(items):
             status = info.get("status", "unknown")
             runtime = _format_duration(info.get("start_time", ""))
             lines.append(
@@ -340,17 +351,21 @@ class ProcessManager:
 # --- module-level singleton ------------------------------------------------
 
 _process_manager: ProcessManager | None = None
+_singleton_lock = threading.Lock()
 
 
 def get_process_manager() -> ProcessManager:
     global _process_manager
     if _process_manager is None:
-        _process_manager = ProcessManager()
+        with _singleton_lock:
+            if _process_manager is None:
+                _process_manager = ProcessManager()
     return _process_manager
 
 
 def close_process_manager() -> None:
     global _process_manager
-    if _process_manager:
-        _process_manager.close()
-        _process_manager = None
+    with _singleton_lock:
+        if _process_manager:
+            _process_manager.close()
+            _process_manager = None
