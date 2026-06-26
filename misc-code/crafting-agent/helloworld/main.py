@@ -132,12 +132,17 @@ def format_tool_log(name, displayed_args):
     return f"→ tool {name}({displayed_args})"
 
 
-def format_tool_args(args):
-    return ", ".join(f"{key}={value!r}" for key, value in args.items())
+def format_tool_args(args, tool_name=None):
+    displayed = []
+    for key, value in args.items():
+        if tool_name == "apply_patch" and key == "patch" and isinstance(value, str):
+            value = value[:100] + " ..." if len(value) > 100 else value
+        displayed.append(f"{key}={value!r}")
+    return ", ".join(displayed)
 
 
 def format_tool_approval_prompt(name, args):
-    return f"Approve tool call {name}({format_tool_args(args)})? [Y/n]: "
+    return f"Approve tool call {name}({format_tool_args(args, name)})? [Y/n]: "
 
 
 def approve_tool_call(name, args, input_fn=None):
@@ -309,7 +314,7 @@ def run(argv=None):
                     name = tc.function.name
                     args = json.loads(tc.function.arguments)
 
-                    s_args = format_tool_args(args)
+                    s_args = format_tool_args(args, name)
                     displayed_args = (
                         s_args if len(s_args) < 50 else s_args[:50] + " ..."
                     )

@@ -11,3 +11,4 @@ helloworld/sessions/
 docs/
 .superpowers/
 node_modules/
+.playwright-mcp/

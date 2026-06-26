@@ -1,10 +1,20 @@
 # Crafting Agent
 
+## Workflows
+
+See more in `./workflows/`.
+
+```bash
+uv run --with jupyter jupyter lab
+```
+
+## General Agent
+
 Quickstart:
 
 ```bash
+uv run pytest
 uv run -m helloworld.main
-uv run --with jupyter jupyter lab
 ```
 
 Sessions:

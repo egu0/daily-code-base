@@ -124,6 +124,19 @@ def test_format_tool_approval_prompt_includes_tool_and_arguments():
     )
 
 
+def test_format_tool_approval_prompt_truncates_apply_patch_content():
+    patch = "a" * 120
+
+    prompt = main.format_tool_approval_prompt("apply_patch", {"patch": patch})
+
+    assert prompt == (
+        "Approve tool call apply_patch("
+        f"patch='{patch[:100]} ...'"
+        ")? [Y/n]: "
+    )
+    assert patch not in prompt
+
+
 def test_approve_tool_call_accepts_enter_y_and_yes():
     prompts = []
 
