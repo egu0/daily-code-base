@@ -33,7 +33,7 @@ load_dotenv()
 models_context_ = {"deepseek-v4-flash": 1000_000, "deepseek-v4-pro": 1000_000}
 
 client = OpenAI(base_url="https://api.deepseek.com/", api_key=os.getenv("DEEPSEEK_KEY"))
-MODEL = "deepseek-v4-flash"
+MODEL = "deepseek-v4-pro"
 
 
 def initial_messages():
@@ -147,7 +147,11 @@ def format_tool_approval_prompt(name, args):
 
 
 def approve_tool_call(name, args, input_fn=None):
-    answer = (input_fn or (lambda p: pt_prompt(p)))(format_tool_approval_prompt(name, args)).strip().lower()
+    answer = (
+        (input_fn or (lambda p: pt_prompt(p)))(format_tool_approval_prompt(name, args))
+        .strip()
+        .lower()
+    )
     return answer not in {"n", "no"}
 
 
