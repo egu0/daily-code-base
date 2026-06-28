@@ -1,5 +1,6 @@
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
@@ -201,3 +202,69 @@ def test_prompt_user_uses_plain_input_to_avoid_prompt_toolkit_sigint_stack():
 
     assert main.prompt_user(input_fn=fake_input) == "hello"
     assert calls == ["You: "]
+
+
+def chunk(delta, finish_reason=None, usage=None):
+    return SimpleNamespace(
+        choices=[
+            SimpleNamespace(
+                delta=delta,
+                finish_reason=finish_reason,
+            )
+        ],
+        usage=usage,
+    )
+
+
+def test_stream_completion_to_response_streams_text_and_builds_message():
+    writes = []
+    stream = [
+        chunk(SimpleNamespace(role="assistant", content="Hel")),
+        chunk(SimpleNamespace(content="lo")),
+        chunk(SimpleNamespace(), finish_reason="stop"),
+    ]
+
+    resp = main.stream_completion_to_response(stream, write_text=writes.append)
+
+    assert writes == ["Hel", "lo"]
+    assert resp.choices[0].message.role == "assistant"
+    assert resp.choices[0].message.content == "Hello"
+    assert resp.choices[0].message.tool_calls is None
+    assert resp.choices[0].finish_reason == "stop"
+
+
+def test_stream_completion_to_response_reconstructs_tool_call_deltas():
+    stream = [
+        chunk(
+            SimpleNamespace(
+                tool_calls=[
+                    SimpleNamespace(
+                        index=0,
+                        id="call_1",
+                        type="function",
+                        function=SimpleNamespace(name="read", arguments='{"pa'),
+                    )
+                ]
+            )
+        ),
+        chunk(
+            SimpleNamespace(
+                tool_calls=[
+                    SimpleNamespace(
+                        index=0,
+                        function=SimpleNamespace(arguments='th":"README.md"}'),
+                    )
+                ]
+            ),
+            finish_reason="tool_calls",
+        ),
+    ]
+
+    resp = main.stream_completion_to_response(stream)
+    tool_call = resp.choices[0].message.tool_calls[0]
+
+    assert tool_call.id == "call_1"
+    assert tool_call.type == "function"
+    assert tool_call.function.name == "read"
+    assert tool_call.function.arguments == '{"path":"README.md"}'
+    assert resp.choices[0].finish_reason == "tool_calls"

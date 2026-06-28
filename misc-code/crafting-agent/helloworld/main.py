@@ -4,6 +4,7 @@ from openai import OpenAI
 from loguru import logger
 import json
 import sys
+from types import SimpleNamespace
 from prompt_toolkit import prompt as pt_prompt
 from .tools import tools_map, tool_schemas
 from .mcp_runtime import MCPToolRegistry, load_default_mcp_registry
@@ -229,6 +230,94 @@ def completion_response_to_json(resp):
     }
 
 
+def value_from(obj, name, default=None):
+    if isinstance(obj, dict):
+        return obj.get(name, default)
+    return getattr(obj, name, default)
+
+
+def stream_completion_to_response(stream, write_text=None):
+    role = "assistant"
+    content_parts = []
+    reasoning_parts = []
+    tool_call_parts = {}
+    finish_reason = None
+    usage = None
+
+    for chunk in stream:
+        usage = value_from(chunk, "usage", usage)
+        choices = value_from(chunk, "choices", []) or []
+        if not choices:
+            continue
+
+        choice = choices[0]
+        finish_reason = value_from(choice, "finish_reason", finish_reason)
+        delta = value_from(choice, "delta")
+        if not delta:
+            continue
+
+        role = value_from(delta, "role", role) or role
+        content = value_from(delta, "content")
+        if content:
+            content_parts.append(content)
+            if write_text:
+                write_text(content)
+
+        reasoning = value_from(delta, "reasoning_content") or value_from(
+            delta, "reasoning"
+        )
+        if reasoning:
+            reasoning_parts.append(reasoning)
+
+        for tool_call in value_from(delta, "tool_calls", []) or []:
+            index = value_from(tool_call, "index")
+            if index is None:
+                index = len(tool_call_parts)
+            part = tool_call_parts.setdefault(
+                index,
+                {
+                    "id": None,
+                    "type": "function",
+                    "name": "",
+                    "arguments": "",
+                },
+            )
+            part["id"] = value_from(tool_call, "id", part["id"]) or part["id"]
+            part["type"] = value_from(tool_call, "type", part["type"]) or part["type"]
+
+            function = value_from(tool_call, "function")
+            if function:
+                name = value_from(function, "name")
+                arguments = value_from(function, "arguments")
+                if name:
+                    part["name"] += name
+                if arguments:
+                    part["arguments"] += arguments
+
+    tool_calls = None
+    if tool_call_parts:
+        tool_calls = [
+            SimpleNamespace(
+                id=part["id"],
+                type=part["type"],
+                function=SimpleNamespace(
+                    name=part["name"],
+                    arguments=part["arguments"],
+                ),
+            )
+            for _, part in sorted(tool_call_parts.items())
+        ]
+
+    message = SimpleNamespace(
+        role=role,
+        content="".join(content_parts) or None,
+        reasoning_content="".join(reasoning_parts) or None,
+        tool_calls=tool_calls,
+    )
+    choice = SimpleNamespace(message=message, finish_reason=finish_reason)
+    return SimpleNamespace(choices=[choice], usage=usage)
+
+
 def prompt_user(input_fn=None) -> str:
     if input_fn is None:
         try:
@@ -267,20 +356,36 @@ def run(argv=None):
                     "model": MODEL,
                     "messages": list(messages),
                     "tools": combined_tool_schemas(mcp_registry),
+                    "stream": True,
                 }
                 request_log_path = record_request(chat_session, request_payload)
-                resp = client.chat.completions.create(
-                    **request_payload,
+                content_streamed = False
+
+                def write_text(text):
+                    nonlocal content_streamed
+                    if not content_streamed:
+                        print("Agent:")
+                        content_streamed = True
+                    print(text, end="", flush=True)
+
+                resp = stream_completion_to_response(
+                    client.chat.completions.create(
+                        **request_payload,
+                    ),
+                    write_text=write_text,
                 )
+                if content_streamed:
+                    print()
                 record_response(request_log_path, completion_response_to_json(resp))
-                logger.debug(
-                    format_usage_log(
-                        resp.usage.prompt_tokens,
-                        resp.usage.completion_tokens,
+                if resp.usage:
+                    logger.debug(
+                        format_usage_log(
+                            resp.usage.prompt_tokens,
+                            resp.usage.completion_tokens,
+                        )
                     )
-                )
                 msg = resp.choices[0].message
-                display = format_assistant_display(msg)
+                display = "" if content_streamed else format_assistant_display(msg)
                 if display:
                     print(display)
 
