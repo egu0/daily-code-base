@@ -7,7 +7,9 @@ if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
 from helloworld import main
+from helloworld import skills
 from helloworld.session_store import SESSION_DIR_ENV, create_session
+from helloworld.tools import tool_schemas, tools_map
 
 
 def test_start_session_resumes_named_session(monkeypatch, tmp_path):
@@ -54,6 +56,82 @@ def test_start_session_resumes_latest(monkeypatch, tmp_path):
 
 def test_main_no_longer_exposes_trim_messages():
     assert not hasattr(main, "trim_messages")
+
+
+def test_discover_skills_reads_name_and_description_from_skill_markdown(tmp_path):
+    skill_dir = tmp_path / "skills" / "frontend-design"
+    skill_dir.mkdir(parents=True)
+    skill_file = skill_dir / "SKILL.md"
+    skill_file.write_text(
+        "---\n"
+        "name: frontend-design\n"
+        "description: Guidance for distinctive UI design.\n"
+        "---\n"
+        "# Frontend Design\n",
+        encoding="utf-8",
+    )
+
+    discovered = skills.discover_skills(tmp_path / "skills")
+
+    assert discovered == [
+        skills.Skill(
+            name="frontend-design",
+            description="Guidance for distinctive UI design.",
+            path=skill_file.resolve(),
+        )
+    ]
+
+
+def test_initial_messages_includes_skill_index_and_read_skill_instruction(
+    monkeypatch, tmp_path
+):
+    skill_dir = tmp_path / "skills" / "playwright-skill"
+    skill_dir.mkdir(parents=True)
+    skill_file = skill_dir / "SKILL.md"
+    skill_file.write_text(
+        "---\n"
+        "name: playwright-skill\n"
+        "description: Complete browser automation with Playwright.\n"
+        "---\n"
+        "# Playwright\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(main, "SKILLS_DIR", tmp_path / "skills")
+
+    system_message = main.initial_messages()[0]["content"]
+
+    assert "Available skills:" in system_message
+    assert "name: playwright-skill" in system_message
+    assert "description: Complete browser automation with Playwright." in system_message
+    assert "Use the read_skill tool" in system_message
+
+
+def test_read_skill_returns_full_skill_markdown_by_name(tmp_path):
+    skill_dir = tmp_path / "skills" / "playwright-skill"
+    skill_dir.mkdir(parents=True)
+    skill_file = skill_dir / "SKILL.md"
+    content = (
+        "---\n"
+        "name: playwright-skill\n"
+        "description: Complete browser automation with Playwright.\n"
+        "---\n"
+        "# Playwright\n"
+        "Follow these instructions.\n"
+    )
+    skill_file.write_text(content, encoding="utf-8")
+
+    result = skills.read_skill("playwright-skill", tmp_path / "skills")
+
+    assert result == {
+        "name": "playwright-skill",
+        "path": str(skill_file.resolve()),
+        "content": content,
+    }
+
+
+def test_read_skill_tool_is_registered():
+    assert "read_skill" in tools_map
+    assert any(schema["function"]["name"] == "read_skill" for schema in tool_schemas)
 
 
 def test_model_message_to_json_preserves_reasoning_content():

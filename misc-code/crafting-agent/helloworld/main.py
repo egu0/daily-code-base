@@ -7,6 +7,7 @@ import sys
 from types import SimpleNamespace
 from prompt_toolkit import prompt as pt_prompt
 from .tools import tools_map, tool_schemas
+from .skills import SKILLS_DIR, discover_skills, format_skill_index
 from .mcp_runtime import MCPToolRegistry, load_default_mcp_registry
 from .session_store import (
     ChatSession,
@@ -37,10 +38,17 @@ MODEL = "deepseek-v4-pro"
 
 
 def initial_messages():
+    skill_index = format_skill_index(discover_skills(SKILLS_DIR))
+    content = (
+        f"You are a helpful agent. Use tools when needed. "
+        f"If needed, current time is {datetime.now()}"
+    )
+    if skill_index:
+        content = f"{content}\n\n{skill_index}"
     return [
         {
             "role": "system",
-            "content": f"You are a helpful agent. Use tools when needed. If needed, current time is {datetime.now()}",
+            "content": content,
         }
     ]
 
