@@ -1,9 +1,17 @@
 {
   "servers": [
     {
-      "name": "playwright",
+      "name": "tavily-mcp",
+      "server_url": "https://mcp.tavily.com/mcp/",
+      "headers": {
+        "Authorization": "${TAVILY_API_KEY}"
+      }
+    },
+    {
+      "name": "playwright-mcp",
       "command": "npx",
-      "args": ["-y", "@playwright/mcp@latest"]
+      "args": ["-y", "@playwright/mcp@latest"],
+      "enabled": false
     }
   ]
 }

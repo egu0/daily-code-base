@@ -106,14 +106,17 @@ object form:
 {
   "servers": [
     {
-      "name": "playwright",
-      "enabled": true,
+      "name": "tavily-mcp",
+      "server_url": "https://mcp.tavily.com/mcp/",
+      "headers": {
+        "Authorization": "${TAVILY_API_KEY}"
+      }
+    },
+    {
+      "name": "playwright-mcp",
       "command": "npx",
       "args": ["-y", "@playwright/mcp@latest"],
-      "env": {
-        "EXAMPLE_API_KEY": "${EXAMPLE_API_KEY}"
-      },
-      "allowed_tools": ["browser_navigate", "browser_snapshot"]
+      "enabled": false
     }
   ]
 }
