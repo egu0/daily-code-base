@@ -1,5 +1,7 @@
 import sys
+import json
 import pytest
+from datetime import timezone, timedelta
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -9,7 +11,7 @@ if str(ROOT_DIR) not in sys.path:
 
 from helloworld import main
 from helloworld import skills
-from helloworld.session_store import SESSION_DIR_ENV, create_session
+from helloworld.session_store import SESSION_DIR_ENV, create_session, save_session
 from helloworld.tools import tool_schemas, tools_map
 
 
@@ -53,6 +55,56 @@ def test_start_session_resumes_latest(monkeypatch, tmp_path):
     session = main.start_session(main.parse_args(["--resume-latest"]))
 
     assert session.id == "sess_new"
+
+
+def test_run_list_sessions_does_not_load_mcp(monkeypatch, tmp_path):
+    monkeypatch.setenv(SESSION_DIR_ENV, str(tmp_path / "sessions"))
+    monkeypatch.setattr(main, "agent_workdir", lambda path=None: tmp_path)
+    monkeypatch.setattr(main, "close_process_manager", lambda: None)
+
+    def fail_load_mcp():
+        raise AssertionError("MCP should not load for --list-sessions")
+
+    monkeypatch.setattr(main, "load_default_mcp_registry", fail_load_mcp)
+
+    with pytest.raises(SystemExit) as exc:
+        main.run(["--list-sessions"])
+
+    assert exc.value.code == 0
+
+
+def test_list_sessions_prints_newest_first_with_readable_local_time(
+    monkeypatch, tmp_path, capsys
+):
+    monkeypatch.setenv(SESSION_DIR_ENV, str(tmp_path))
+    old = create_session([], session_dir=tmp_path, session_id="sess_old")
+    new = create_session(
+        [{"role": "user", "content": "hello"}],
+        session_dir=tmp_path,
+        session_id="sess_new",
+    )
+    updated_times = {
+        old.id: "2026-06-29T01:00:00+00:00",
+        new.id: "2026-06-29T02:11:50.272327+00:00",
+    }
+    save_session(old, session_dir=tmp_path)
+    save_session(new, session_dir=tmp_path)
+    for session in (old, new):
+        session_file = tmp_path / session.id / "session.json"
+        payload = json.loads(session_file.read_text(encoding="utf-8"))
+        payload["updated_at"] = updated_times[session.id]
+        session_file.write_text(json.dumps(payload), encoding="utf-8")
+    local_tz = timezone(timedelta(hours=10), "AEST")
+    monkeypatch.setattr(main, "local_timezone", lambda: local_tz)
+
+    with pytest.raises(SystemExit) as exc:
+        main.start_session(main.parse_args(["--list-sessions"]))
+
+    assert exc.value.code == 0
+    assert capsys.readouterr().out == (
+        "sess_new\t2026-06-29 12:11:50 AEST\t1 messages\n"
+        "sess_old\t2026-06-29 11:00:00 AEST\t0 messages\n"
+    )
 
 
 def test_list_skills_prints_multiline_skill_blocks(monkeypatch, tmp_path, capsys):

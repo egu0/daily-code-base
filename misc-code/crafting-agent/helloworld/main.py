@@ -25,7 +25,7 @@ from .session_store import (
     record_response,
     save_session,
 )
-from datetime import datetime
+from datetime import datetime, timezone
 import argparse
 from .tools.background_process.manager import close_process_manager
 
@@ -105,7 +105,11 @@ def start_session(args, mcp_registry: MCPToolRegistry | None = None) -> ChatSess
         from .session_store import list_sessions
 
         for item in list_sessions():
-            print(f"{item.id}\t{item.updated_at}\t{len(item.messages)} messages")
+            print(
+                f"{item.id}\t"
+                f"{format_session_updated_at(item.updated_at)}\t"
+                f"{len(item.messages)} messages"
+            )
         raise SystemExit(0)
 
     if args.resume_latest:
@@ -154,6 +158,22 @@ def format_session_log(session_id):
 
 def format_loaded_tools_log(count):
     return f"• loaded {count} MCP tools"
+
+
+def local_timezone():
+    return datetime.now().astimezone().tzinfo
+
+
+def format_session_updated_at(updated_at):
+    try:
+        parsed = datetime.fromisoformat(updated_at)
+    except ValueError:
+        return updated_at
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    local_time = parsed.astimezone(local_timezone())
+    tz_name = local_time.tzname() or local_time.strftime("%z")
+    return f"{local_time:%Y-%m-%d %H:%M:%S} {tz_name}".rstrip()
 
 
 def format_request_log():
@@ -373,6 +393,10 @@ def prompt_user(input_fn=None) -> str:
 def run(argv=None):
     args = parse_args(argv)
     os.chdir(agent_workdir(args.workdir))
+    if args.list_sessions or args.list_skills:
+        start_session(args)
+        return
+
     mcp_registry = load_default_mcp_registry()
     if mcp_registry.tool_schemas:
         logger.info(format_loaded_tools_log(len(mcp_registry.tool_schemas)))

@@ -86,6 +86,27 @@ def test_list_sessions_sorts_newest_first(tmp_path):
     ]
 
 
+def test_list_sessions_sorts_by_actual_updated_time_across_offsets(tmp_path):
+    first = create_session([], session_dir=tmp_path, session_id="sess_first")
+    second = create_session([], session_dir=tmp_path, session_id="sess_second")
+    updated_times = {
+        first.id: "2026-01-02T00:30:00+11:00",
+        second.id: "2026-01-01T14:00:00+00:00",
+    }
+    save_session(first, session_dir=tmp_path)
+    save_session(second, session_dir=tmp_path)
+    for session in (first, second):
+        session_file = tmp_path / session.id / "session.json"
+        payload = json.loads(session_file.read_text(encoding="utf-8"))
+        payload["updated_at"] = updated_times[session.id]
+        session_file.write_text(json.dumps(payload), encoding="utf-8")
+
+    assert [session.id for session in list_sessions(session_dir=tmp_path)] == [
+        "sess_second",
+        "sess_first",
+    ]
+
+
 def test_invalid_session_id_is_rejected(tmp_path):
     assert load_session("../escape", session_dir=tmp_path) is None
 

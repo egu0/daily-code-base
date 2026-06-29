@@ -63,6 +63,16 @@ def session_from_json(payload: dict[str, Any]) -> ChatSession:
     )
 
 
+def session_updated_at(session: ChatSession) -> datetime:
+    try:
+        updated_at = datetime.fromisoformat(session.updated_at)
+    except ValueError:
+        return datetime.min.replace(tzinfo=timezone.utc)
+    if updated_at.tzinfo is None:
+        return updated_at.replace(tzinfo=timezone.utc)
+    return updated_at
+
+
 def create_session(
     initial_messages: list[dict[str, Any]],
     session_dir: str | Path | None = None,
@@ -115,7 +125,7 @@ def list_sessions(session_dir: str | Path | None = None) -> list[ChatSession]:
             sessions.append(session_from_json(json.loads(path.read_text(encoding="utf-8"))))
         except (OSError, ValueError, KeyError, json.JSONDecodeError):
             continue
-    return sorted(sessions, key=lambda item: item.updated_at, reverse=True)
+    return sorted(sessions, key=session_updated_at, reverse=True)
 
 
 def latest_session(session_dir: str | Path | None = None) -> ChatSession | None:
