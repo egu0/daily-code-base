@@ -33,6 +33,14 @@ LOG_FORMAT = "<level>{message}</level>"
 ANSI_DIM = "\033[2m"
 ANSI_RESET = "\033[0m"
 
+ROLE_COLORS = {
+    "system": "\033[2m",       # dim
+    "user": "\033[32m",        # green
+    "assistant": "\033[36m",   # cyan
+    "tool": "\033[33m",        # yellow
+}
+ROLE_COLOR_RESET = "\033[0m"
+
 logger.remove(0)
 logger.add(sys.stdout, colorize=True, format=LOG_FORMAT)
 
@@ -92,6 +100,11 @@ def parse_args(argv=None):
         "--list-mcp-tools",
         action="store_true",
         help="List available MCP tools grouped by server and exit.",
+    )
+    parser.add_argument(
+        "--inspect-session",
+        metavar="SID",
+        help="Print messages from a saved session and exit.",
     )
     return parser.parse_args(argv)
 
@@ -178,6 +191,46 @@ def list_mcp_tools(mcp_registry: MCPToolRegistry | None = None):
         print(f"tool-name: {tool['tool_name']}")
         print(f"tool-description: {tool['description'] or 'No description provided.'}")
         print(f"enabled: {tool['enabled']}")
+
+
+def inspect_session(session_id: str):
+    """Print messages from a saved session and exit."""
+    from .session_store import load_session
+
+    session = load_session(session_id)
+    if not session:
+        print(f"Session not found: {session_id}")
+        raise SystemExit(1)
+
+    print(f"# session: {session.id}")
+    print(f"# created: {format_session_updated_at(session.created_at)}")
+    print(f"# updated: {format_session_updated_at(session.updated_at)}")
+    print(f"# messages: {len(session.messages)}")
+    print()
+
+    for index, msg in enumerate(session.messages):
+        if index:
+            print()
+        role = msg.get("role", "unknown")
+        content = msg.get("content") or ""
+        tool_call_id = msg.get("tool_call_id")
+        tool_calls = msg.get("tool_calls")
+
+        color = ROLE_COLORS.get(role, "")
+        reset = ROLE_COLOR_RESET if color else ""
+
+        if role == "tool":
+            print(f"{color}[{role}]{reset} id={tool_call_id}")
+        else:
+            print(f"{color}[{role}]{reset}")
+
+        if content:
+            print(content)
+
+        if tool_calls:
+            for tc in tool_calls:
+                func = tc.get("function", {})
+                print(f"  → tool_call: {func.get('name', '?')}({func.get('arguments', '')})")
 
 
 def local_timezone():
@@ -415,6 +468,10 @@ def run(argv=None):
     os.chdir(agent_workdir(args.workdir))
     if args.list_sessions or args.list_skills:
         start_session(args)
+        return
+
+    if args.inspect_session:
+        inspect_session(args.inspect_session)
         return
 
     if args.list_mcp_tools:
