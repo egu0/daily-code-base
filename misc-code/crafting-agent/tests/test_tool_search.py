@@ -46,6 +46,14 @@ class FakeMCPClient:
                     "required": ["city"],
                 },
             },
+            {
+                "name": "snapshot",
+                "description": "Capture current browser state",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {},
+                },
+            },
         ]
 
     def call_tool(self, tool_name, arguments):
@@ -112,6 +120,30 @@ def test_tool_call_dispatches_to_mcp_registry():
         "tool": "search",
         "arguments": {"query": "agent frameworks"},
     }
+
+
+def test_tool_call_defaults_missing_arguments_to_empty_dict():
+    from helloworld.tool_search import MCPToolSearchRouter
+
+    registry = make_registry()
+    router = MCPToolSearchRouter(registry)
+
+    result = router.execute("tool_call", {"name": "remote__snapshot"})
+
+    assert result == {
+        "tool": "snapshot",
+        "arguments": {},
+    }
+
+
+def test_tool_call_returns_error_for_unknown_mcp_tool():
+    from helloworld.tool_search import MCPToolSearchRouter
+
+    router = MCPToolSearchRouter(make_registry())
+
+    result = router.execute("tool_call", {"name": "read", "arguments": {"path": "."}})
+
+    assert result == "Error: unknown MCP tool: read"
 
 
 def test_tool_describe_rejects_unknown_tool():

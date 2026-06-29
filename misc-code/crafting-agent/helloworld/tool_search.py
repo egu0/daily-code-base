@@ -153,10 +153,10 @@ class MCPToolSearchRouter:
             "parameters": function.get("parameters", {}),
         }
 
-    def call(self, name: str, arguments: dict[str, Any]) -> Any:
+    def call(self, name: str, arguments: dict[str, Any] | None = None) -> Any:
         if not self.registry.has_tool(name):
-            raise KeyError(f"unknown MCP tool: {name}")
-        return self.registry.call_tool(name, arguments)
+            return f"Error: unknown MCP tool: {name}"
+        return self.registry.call_tool(name, arguments or {})
 
 
 def _tokenize(text: str) -> list[str]:
