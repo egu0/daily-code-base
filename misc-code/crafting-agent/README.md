@@ -10,51 +10,6 @@ uv run --with jupyter jupyter lab
 
 ## General Agent
 
-Quickstart:
-
-```bash
-uv run pytest
-hgent
-hgent --session sess_notes
-hgent --resume-latest
-```
-
-`hgent` starts the agent from this repository, but uses the directory where you
-typed `hgent` as the tool working directory.
-
-Sessions:
-
-```bash
-hgent --session sess_notes
-hgent --resume-latest
-hgent --list-sessions
-```
-
-By default, the agent uses `~/.hello-agent` as its global home:
-
-```text
-~/.hello-agent/
-  skills/
-  mcp_config.json
-  sessions/
-```
-
-Session data is stored under `~/.hello-agent/sessions/<session_id>/`. The current
-conversation lives in `session.json`, and each model request is saved as
-`1.json`, `2.json`, and so on. Each numbered file contains both the `request`
-payload and the model `response`, including reasoning fields when the provider
-returns them.
-
-Environment overrides:
-
-| Variable | Purpose |
-| --- | --- |
-| `HELLO_AGENT_HOME` | Base directory for global agent data. Defaults to `~/.hello-agent`. |
-| `HELLO_AGENT_WORKDIR` | Tool working directory when `--workdir` is not provided. |
-| `HELLO_AGENT_SKILLS_DIR` | Skills directory. Defaults to `$HELLO_AGENT_HOME/skills`. |
-| `HELLOWORLD_MCP_CONFIG` | MCP config file. Defaults to `$HELLO_AGENT_HOME/mcp_config.json`. |
-| `HELLOWORLD_SESSION_DIR` | Session data directory. Defaults to `$HELLO_AGENT_HOME/sessions`. |
-
 ### Shell command
 
 Add this to `~/.zshrc` to make `hgent` available everywhere:
@@ -73,6 +28,41 @@ Reload the shell after editing:
 source ~/.zshrc
 ```
 
+### Quickstart
+
+```bash
+uv run pytest
+hgent
+```
+
+`hgent` starts the agent from this repository, but uses the directory where you
+typed `hgent` as the tool working directory.
+
+By default, the agent uses `~/.hello-agent` as its global home:
+
+```text
+~/.hello-agent/
+  skills/
+  mcp_config.json
+  sessions/
+```
+
+Session data is stored under `~/.hello-agent/sessions/<session_id>/`. The current
+conversation lives in `session.json`, and each model request is saved as
+`1.json`, `2.json`, and so on. Each numbered file contains both the `request`
+payload and the model `response`, including reasoning fields when the provider
+returns them.
+
+Environment overrides:
+
+| Variable                 | Purpose                                                             |
+| ------------------------ | ------------------------------------------------------------------- |
+| `HELLO_AGENT_HOME`       | Base directory for global agent data. Defaults to `~/.hello-agent`. |
+| `HELLO_AGENT_WORKDIR`    | Tool working directory when `--workdir` is not provided.            |
+| `HELLO_AGENT_SKILLS_DIR` | Skills directory. Defaults to `$HELLO_AGENT_HOME/skills`.           |
+| `HELLOWORLD_MCP_CONFIG`  | MCP config file. Defaults to `$HELLO_AGENT_HOME/mcp_config.json`.   |
+| `HELLOWORLD_SESSION_DIR` | Session data directory. Defaults to `$HELLO_AGENT_HOME/sessions`.   |
+
 ### Skills
 
 Skills are loaded from `~/.hello-agent/skills` by default. Each skill must live
@@ -88,10 +78,10 @@ in its own directory and contain a `SKILL.md` file:
 
 `SKILL.md` must start with YAML-style metadata. Required fields:
 
-| Field | Required | Description |
-| --- | --- | --- |
-| `name` | Yes | Public skill name used by the agent and `read_skill`. |
-| `description` | Yes | Short summary used in the system prompt for skill selection. |
+| Field         | Required | Description                                                  |
+| ------------- | -------- | ------------------------------------------------------------ |
+| `name`        | Yes      | Public skill name used by the agent and `read_skill`.        |
+| `description` | Yes      | Short summary used in the system prompt for skill selection. |
 
 Example:
 
@@ -131,15 +121,15 @@ object form:
 
 Server fields:
 
-| Field | Required | Description |
-| --- | --- | --- |
-| `name` | Yes | Local server alias. Tool names are exposed as `<name>__<tool>`, for example `playwright__browser_navigate`. |
-| `command` | Yes | Command used to start the MCP server, such as `npx`, `uvx`, or an absolute path. |
-| `type` | No | MCP client type. Defaults to `"mcp"` when omitted. |
-| `enabled` | No | Whether to load this server. Defaults to `true`; set to `false` to skip it. |
-| `args` | No | Command arguments as a list of strings. |
-| `env` | No | Environment variables passed to the server. Values like `"${VAR_NAME}"` are expanded from the current shell environment. |
-| `allowed_tools` | No | Allowlist of original MCP tool names to expose. Omit or use an empty list to expose all tools from the server. |
+| Field           | Required | Description                                                                                                              |
+| --------------- | -------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `name`          | Yes      | Local server alias. Tool names are exposed as `<name>__<tool>`, for example `playwright__browser_navigate`.              |
+| `command`       | Yes      | Command used to start the MCP server, such as `npx`, `uvx`, or an absolute path.                                         |
+| `type`          | No       | MCP client type. Defaults to `"mcp"` when omitted.                                                                       |
+| `enabled`       | No       | Whether to load this server. Defaults to `true`; set to `false` to skip it.                                              |
+| `args`          | No       | Command arguments as a list of strings.                                                                                  |
+| `env`           | No       | Environment variables passed to the server. Values like `"${VAR_NAME}"` are expanded from the current shell environment. |
+| `allowed_tools` | No       | Allowlist of original MCP tool names to expose. Omit or use an empty list to expose all tools from the server.           |
 
 The model sees MCP tools through `tool_search`, `tool_describe`, and
 `tool_call`. Local core tools such as `read`, `grep`, and `bash` remain directly
