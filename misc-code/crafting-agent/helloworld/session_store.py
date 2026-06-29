@@ -7,9 +7,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from .config import SESSION_DIR_ENV, default_session_dir
+
 SESSION_ID_PATTERN = re.compile(r"^[A-Za-z0-9_-]+$")
-SESSION_DIR_ENV = "HELLOWORLD_SESSION_DIR"
-DEFAULT_SESSION_DIR = Path(__file__).resolve().parent / "sessions"
+DEFAULT_SESSION_DIR = default_session_dir()
 
 
 @dataclass
@@ -27,7 +28,7 @@ class ChatSession:
 def session_dir(path: str | Path | None = None) -> Path:
     if path is not None:
         return Path(path)
-    return Path(os.environ.get(SESSION_DIR_ENV, DEFAULT_SESSION_DIR))
+    return Path(os.environ.get(SESSION_DIR_ENV, default_session_dir()))
 
 
 def valid_session_id(session_id: str) -> bool:

@@ -7,6 +7,7 @@ import sys
 from types import SimpleNamespace
 from prompt_toolkit import prompt as pt_prompt
 from .tools import tools_map, tool_schemas
+from .config import agent_workdir
 from .skills import SKILLS_DIR, discover_skills, format_skill_index
 from .mcp_runtime import MCPToolRegistry, load_default_mcp_registry
 from .tool_search import (
@@ -64,6 +65,10 @@ messages = initial_messages()
 
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(description="Run the helloworld CLI agent.")
+    parser.add_argument(
+        "--workdir",
+        help="Working directory for tool calls. Defaults to HELLO_AGENT_WORKDIR or the current directory.",
+    )
     parser.add_argument(
         "--session",
         help="Resume an existing session id. Creates it if it does not exist.",
@@ -353,6 +358,7 @@ def prompt_user(input_fn=None) -> str:
 
 def run(argv=None):
     args = parse_args(argv)
+    os.chdir(agent_workdir(args.workdir))
     mcp_registry = load_default_mcp_registry()
     if mcp_registry.tool_schemas:
         logger.info(format_loaded_tools_log(len(mcp_registry.tool_schemas)))

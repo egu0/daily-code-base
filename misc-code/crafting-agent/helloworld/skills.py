@@ -1,8 +1,9 @@
 from dataclasses import dataclass
 from pathlib import Path
 
+from .config import default_skills_dir
 
-SKILLS_DIR = Path(__file__).parent / "skills"
+SKILLS_DIR = default_skills_dir()
 SKILL_FILE_NAME = "SKILL.md"
 
 

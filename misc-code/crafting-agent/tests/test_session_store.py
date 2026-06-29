@@ -7,6 +7,7 @@ if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
 from helloworld.session_store import (
+    DEFAULT_SESSION_DIR,
     create_session,
     latest_session,
     list_sessions,
@@ -14,7 +15,21 @@ from helloworld.session_store import (
     record_request,
     record_response,
     save_session,
+    session_dir,
 )
+
+
+def test_default_session_dir_is_under_user_hello_agent():
+    assert DEFAULT_SESSION_DIR == Path.home() / ".hello-agent" / "sessions"
+
+
+def test_session_dir_uses_agent_home_at_runtime(monkeypatch):
+    from helloworld import config
+
+    monkeypatch.delenv(config.SESSION_DIR_ENV, raising=False)
+    monkeypatch.setenv(config.AGENT_HOME_ENV, "/tmp/hello-home")
+
+    assert session_dir() == Path("/tmp/hello-home/sessions")
 
 
 def test_create_session_persists_messages(tmp_path):

@@ -6,7 +6,13 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-from helloworld.mcp_runtime import MCP_CONFIG_ENV, MCPToolRegistry, load_default_mcp_registry, load_mcp_configs
+from helloworld.mcp_runtime import (
+    DEFAULT_MCP_CONFIG_PATH,
+    MCP_CONFIG_ENV,
+    MCPToolRegistry,
+    load_default_mcp_registry,
+    load_mcp_configs,
+)
 
 
 class FakeMCPClient:
@@ -49,6 +55,23 @@ def test_load_mcp_configs_returns_empty_for_missing_file(tmp_path):
     assert load_mcp_configs(tmp_path / "missing.json") == []
 
 
+def test_default_mcp_config_path_is_under_user_hello_agent():
+    assert DEFAULT_MCP_CONFIG_PATH == Path.home() / ".hello-agent" / "mcp_config.json"
+
+
+def test_load_mcp_configs_uses_agent_home_at_runtime(monkeypatch, tmp_path):
+    from helloworld import config
+
+    agent_home = tmp_path / "hello-home"
+    agent_home.mkdir()
+    config_path = agent_home / "mcp_config.json"
+    config_path.write_text(json.dumps({"servers": []}), encoding="utf-8")
+    monkeypatch.delenv(config.MCP_CONFIG_ENV, raising=False)
+    monkeypatch.setenv(config.AGENT_HOME_ENV, str(agent_home))
+
+    assert load_mcp_configs() == []
+
+
 def test_load_mcp_configs_accepts_servers_object(tmp_path):
     config_path = tmp_path / "mcp.json"
     config_path.write_text(
@@ -73,6 +96,31 @@ def test_load_mcp_configs_accepts_servers_object(tmp_path):
             "name": "fake",
             "command": "fake-command",
             "args": ["--stdio"],
+        }
+    ]
+
+
+def test_load_mcp_configs_defaults_missing_type_to_mcp(tmp_path):
+    config_path = tmp_path / "mcp.json"
+    config_path.write_text(
+        json.dumps(
+            {
+                "servers": [
+                    {
+                        "name": "fake",
+                        "command": "fake-command",
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    assert load_mcp_configs(config_path) == [
+        {
+            "type": "mcp",
+            "name": "fake",
+            "command": "fake-command",
         }
     ]
 
@@ -129,6 +177,33 @@ def test_registry_prefixes_mcp_tool_schemas_and_filters_allowed_tools():
     assert schemas[0]["function"]["name"] == "fake__echo"
     assert schemas[0]["function"]["description"] == "Echo input"
     assert schemas[0]["function"]["parameters"]["required"] == ["text"]
+
+
+def test_registry_skips_disabled_mcp_servers():
+    FakeMCPClient.created_configs = []
+
+    registry = MCPToolRegistry(
+        [
+            {
+                "type": "mcp",
+                "name": "disabled",
+                "command": "fake-command",
+                "enabled": False,
+            },
+            {
+                "type": "mcp",
+                "name": "enabled",
+                "command": "fake-command",
+            },
+        ],
+        client_factory=FakeMCPClient.from_config,
+    )
+
+    assert [config["name"] for config in FakeMCPClient.created_configs] == ["enabled"]
+    assert {schema["function"]["name"] for schema in registry.tool_schemas} == {
+        "enabled__echo",
+        "enabled__hidden",
+    }
 
 
 def test_registry_dispatches_prefixed_tool_name_to_original_mcp_tool():

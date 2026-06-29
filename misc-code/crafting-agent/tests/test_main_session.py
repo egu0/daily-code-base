@@ -1,4 +1,5 @@
 import sys
+import pytest
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -56,6 +57,46 @@ def test_start_session_resumes_latest(monkeypatch, tmp_path):
 
 def test_main_no_longer_exposes_trim_messages():
     assert not hasattr(main, "trim_messages")
+
+
+def test_skills_dir_defaults_under_user_hello_agent():
+    assert skills.SKILLS_DIR == Path.home() / ".hello-agent" / "skills"
+
+
+def test_run_changes_to_agent_workdir(monkeypatch, tmp_path):
+    workdir = tmp_path / "project"
+    workdir.mkdir()
+    observed = {}
+
+    monkeypatch.setattr(
+        main,
+        "load_default_mcp_registry",
+        lambda: SimpleNamespace(tool_schemas=[], close=lambda: None),
+    )
+    monkeypatch.setattr(
+        main,
+        "start_session",
+        lambda args, mcp_registry=None: SimpleNamespace(id="sess_test", messages=[]),
+    )
+    monkeypatch.setattr(main, "restore_messages", lambda session, mcp_registry=None: None)
+    monkeypatch.setattr(
+        main,
+        "prompt_user",
+        lambda: (_ for _ in ()).throw(RuntimeError("stop loop")),
+    )
+    monkeypatch.setattr(main, "close_process_manager", lambda: None)
+    monkeypatch.setattr(main, "agent_workdir", lambda path=None: workdir)
+
+    def capture_log(session_id):
+        observed["cwd"] = Path.cwd()
+        return f"session {session_id}"
+
+    monkeypatch.setattr(main, "format_session_log", capture_log)
+
+    with pytest.raises(RuntimeError, match="stop loop"):
+        main.run([])
+
+    assert observed["cwd"] == workdir
 
 
 def test_discover_skills_reads_name_and_description_from_skill_markdown(tmp_path):
