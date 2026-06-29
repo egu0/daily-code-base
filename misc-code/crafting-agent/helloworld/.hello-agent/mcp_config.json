@@ -4,11 +4,6 @@
       "name": "playwright",
       "command": "npx",
       "args": ["-y", "@playwright/mcp@latest"]
-    },
-    {
-      "name": "tavily-mcp",
-      "command": "npx",
-      "args": ["-y", "tavily-mcp@latest"]
     }
   ]
 }
