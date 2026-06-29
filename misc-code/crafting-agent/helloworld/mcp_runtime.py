@@ -64,6 +64,7 @@ class MCPToolRegistry:
         self._client_factory = client_factory or MCPClient.from_config
         self._tool_routes: dict[str, tuple[Any, str]] = {}
         self.tool_schemas: list[dict[str, Any]] = []
+        self._tool_info: list[dict[str, Any]] = []
         self.clients: list[Any] = []
 
         for config in configs:
@@ -80,7 +81,16 @@ class MCPToolRegistry:
 
             for tool in client.list_tools():
                 original_name = tool["name"]
-                if allowed_tools and original_name not in allowed_tools:
+                enabled = not allowed_tools or original_name in allowed_tools
+
+                self._tool_info.append({
+                    "server_name": server_name,
+                    "tool_name": original_name,
+                    "description": tool.get("description") or "",
+                    "enabled": enabled,
+                })
+
+                if not enabled:
                     continue
 
                 public_name = f"{server_name}__{original_name}"
@@ -110,6 +120,15 @@ class MCPToolRegistry:
     def call_tool(self, name: str, args: dict[str, Any]) -> Any:
         client, original_name = self._tool_routes[name]
         return client.call_tool(original_name, args)
+
+    def tools_by_server(self, enabled_only: bool = True) -> list[dict[str, Any]]:
+        """Return tools with server and enabled metadata.
+
+        Set enabled_only=False to include disabled tools (e.g. for --list-mcp-tools).
+        """
+        if enabled_only:
+            return [t for t in self._tool_info if t["enabled"]]
+        return list(self._tool_info)
 
     def close(self) -> None:
         for client in self.clients:

@@ -88,6 +88,11 @@ def parse_args(argv=None):
         action="store_true",
         help="List enabled skills and exit.",
     )
+    parser.add_argument(
+        "--list-mcp-tools",
+        action="store_true",
+        help="List available MCP tools grouped by server and exit.",
+    )
     return parser.parse_args(argv)
 
 
@@ -158,6 +163,21 @@ def format_session_log(session_id):
 
 def format_loaded_tools_log(count):
     return f"• loaded {count} MCP tools"
+
+
+def list_mcp_tools(mcp_registry: MCPToolRegistry | None = None):
+    """Print MCP tools grouped by server and exit."""
+    tool_info = mcp_registry.tools_by_server(enabled_only=False) if mcp_registry else []
+    if not tool_info:
+        return
+
+    for index, tool in enumerate(tool_info):
+        if index:
+            print()
+        print(f"mcp-server-name: {tool['server_name']}")
+        print(f"tool-name: {tool['tool_name']}")
+        print(f"tool-description: {tool['description'] or 'No description provided.'}")
+        print(f"enabled: {tool['enabled']}")
 
 
 def local_timezone():
@@ -395,6 +415,12 @@ def run(argv=None):
     os.chdir(agent_workdir(args.workdir))
     if args.list_sessions or args.list_skills:
         start_session(args)
+        return
+
+    if args.list_mcp_tools:
+        mcp_registry = load_default_mcp_registry()
+        list_mcp_tools(mcp_registry)
+        mcp_registry.close()
         return
 
     mcp_registry = load_default_mcp_registry()

@@ -110,7 +110,8 @@ object form:
       "server_url": "https://mcp.tavily.com/mcp/",
       "headers": {
         "Authorization": "${TAVILY_API_KEY}"
-      }
+      },
+      "allowed_tools": ["tavily_search", "tavily_extract"]
     },
     {
       "name": "playwright-mcp",
