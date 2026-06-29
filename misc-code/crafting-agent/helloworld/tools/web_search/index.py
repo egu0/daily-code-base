@@ -3,6 +3,8 @@ import os
 import urllib.request
 import urllib.error
 
+enabled = False
+
 
 def web_search(query):
     api_key = os.environ.get("TAVILY_KEY", "")

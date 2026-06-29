@@ -2,6 +2,8 @@ import os
 from dataclasses import dataclass, field
 from pathlib import Path
 
+enabled = True
+
 
 def _resolve_workspace():
     override = os.environ.get("APPLY_PATCH_WORKSPACE")

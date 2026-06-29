@@ -2,6 +2,8 @@ import json
 
 from ...skills import read_skill as load_skill
 
+enabled = True
+
 
 def read_skill(name):
     try:

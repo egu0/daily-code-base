@@ -1,6 +1,8 @@
 import subprocess
 from pathlib import Path
 
+enabled = True
+
 DEFAULT_MAX_RESULTS = 100
 
 

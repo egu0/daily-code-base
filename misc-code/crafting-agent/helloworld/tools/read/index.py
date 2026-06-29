@@ -1,5 +1,7 @@
 from pathlib import Path
 
+enabled = True
+
 DEFAULT_FILE_LINES = 200
 DEFAULT_DIRECTORY_ENTRIES = 100
 READ_PREVIEW_BYTES = 4096

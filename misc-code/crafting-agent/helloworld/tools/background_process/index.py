@@ -1,5 +1,7 @@
 from .manager import get_process_manager
 
+enabled = True
+
 
 def background_process(
     action: str,

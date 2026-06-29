@@ -3,6 +3,8 @@ import os
 import urllib.request
 import urllib.error
 
+enabled = False
+
 MAX_CONTENT_LENGTH = 3000
 
 

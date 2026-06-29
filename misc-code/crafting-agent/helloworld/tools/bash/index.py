@@ -1,6 +1,8 @@
 import os
 import subprocess
 
+enabled = True
+
 DEFAULT_TIMEOUT = 120
 MAX_TIMEOUT = 600
 MAX_OUTPUT_CHARS = 10_000
