@@ -45,10 +45,7 @@ MODEL = "deepseek-v4-pro"
 
 def initial_messages(mcp_registry: MCPToolRegistry | None = None):
     skill_index = format_skill_index(discover_skills(SKILLS_DIR))
-    content = (
-        f"You are a helpful agent. Use tools when needed. "
-        f"If needed, current time is {datetime.now()}"
-    )
+    content = f"You are a helpful assitant."
     mcp_tool_index = format_mcp_tool_index(mcp_registry)
     if mcp_tool_index:
         content = f"{content}\n\n{mcp_tool_index}"
