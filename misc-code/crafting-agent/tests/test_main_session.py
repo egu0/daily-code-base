@@ -106,6 +106,60 @@ def test_initial_messages_includes_skill_index_and_read_skill_instruction(
     assert "Use the read_skill tool" in system_message
 
 
+def test_initial_messages_omits_mcp_tool_section_without_mcp_tools(
+    monkeypatch, tmp_path
+):
+    monkeypatch.setattr(main, "SKILLS_DIR", tmp_path / "skills")
+
+    system_message = main.initial_messages()[0]["content"]
+
+    assert "You have access to MCP tools." not in system_message
+
+
+def test_initial_messages_includes_mcp_tool_names_and_descriptions(
+    monkeypatch, tmp_path
+):
+    monkeypatch.setattr(main, "SKILLS_DIR", tmp_path / "skills")
+    mcp_registry = SimpleNamespace(
+        tool_schemas=[
+            {
+                "type": "function",
+                "function": {
+                    "name": "fake__echo",
+                    "description": "Echo input back to the user",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {"text": {"type": "string"}},
+                        "required": ["text"],
+                    },
+                },
+            }
+        ]
+    )
+
+    system_message = main.initial_messages(mcp_registry)[0]["content"]
+
+    assert "You have access to MCP tools." in system_message
+    assert (
+        "An MCP tool is an external capability provided by a connected server. "
+        "MCP tools are listed by name and description only, and are not "
+        "directly callable as function tools."
+    ) in system_message
+    assert (
+        "If the user request matches an MCP tool description, use "
+        "tool_describe with the MCP tool name to read its full argument schema "
+        "before calling it. Then use tool_call with the MCP tool name and "
+        "arguments. Use tool_search only when the listed MCP tools are not "
+        "enough to choose the right tool."
+    ) in system_message
+    assert "Available MCP tools:" in system_message
+    assert "- name: fake__echo" in system_message
+    assert "  description: Echo input back to the user" in system_message
+    assert "call tool_search to find relevant tools" not in system_message
+    assert '"properties"' not in system_message
+    assert '"required"' not in system_message
+
+
 def test_read_skill_returns_full_skill_markdown_by_name(tmp_path):
     skill_dir = tmp_path / "skills" / "playwright-skill"
     skill_dir.mkdir(parents=True)

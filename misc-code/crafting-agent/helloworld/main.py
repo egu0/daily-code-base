@@ -9,6 +9,12 @@ from prompt_toolkit import prompt as pt_prompt
 from .tools import tools_map, tool_schemas
 from .skills import SKILLS_DIR, discover_skills, format_skill_index
 from .mcp_runtime import MCPToolRegistry, load_default_mcp_registry
+from .tool_search import (
+    MCPToolSearchRouter,
+    BRIDGE_TOOL_NAMES,
+    format_mcp_tool_index,
+    tool_search_schemas,
+)
 from .session_store import (
     ChatSession,
     create_session,
@@ -37,12 +43,15 @@ client = OpenAI(base_url="https://api.deepseek.com/", api_key=os.getenv("DEEPSEE
 MODEL = "deepseek-v4-pro"
 
 
-def initial_messages():
+def initial_messages(mcp_registry: MCPToolRegistry | None = None):
     skill_index = format_skill_index(discover_skills(SKILLS_DIR))
     content = (
         f"You are a helpful agent. Use tools when needed. "
         f"If needed, current time is {datetime.now()}"
     )
+    mcp_tool_index = format_mcp_tool_index(mcp_registry)
+    if mcp_tool_index:
+        content = f"{content}\n\n{mcp_tool_index}"
     if skill_index:
         content = f"{content}\n\n{skill_index}"
     return [
@@ -75,7 +84,7 @@ def parse_args(argv=None):
     return parser.parse_args(argv)
 
 
-def start_session(args) -> ChatSession:
+def start_session(args, mcp_registry: MCPToolRegistry | None = None) -> ChatSession:
     if args.list_sessions:
         from .session_store import list_sessions
 
@@ -87,19 +96,19 @@ def start_session(args) -> ChatSession:
         session = latest_session()
         if session:
             return session
-        return create_session(initial_messages())
+        return create_session(initial_messages(mcp_registry))
 
     if args.session:
         session = load_session(args.session)
         if session:
             return session
-        return create_session(initial_messages(), session_id=args.session)
+        return create_session(initial_messages(mcp_registry), session_id=args.session)
 
-    return create_session(initial_messages())
+    return create_session(initial_messages(mcp_registry))
 
 
-def restore_messages(session: ChatSession):
-    messages[:] = session.messages or initial_messages()
+def restore_messages(session: ChatSession, mcp_registry: MCPToolRegistry | None = None):
+    messages[:] = session.messages or initial_messages(mcp_registry)
 
 
 def persist_messages(session: ChatSession):
@@ -108,14 +117,16 @@ def persist_messages(session: ChatSession):
 
 
 def combined_tool_schemas(mcp_registry: MCPToolRegistry | None):
-    if not mcp_registry:
+    if not mcp_registry or not mcp_registry.tool_schemas:
         return tool_schemas
-    return tool_schemas + mcp_registry.tool_schemas
+    return tool_schemas + tool_search_schemas
 
 
 def execute_tool(name, args, mcp_registry: MCPToolRegistry | None = None):
     if name in tools_map:
         return tools_map[name](**args)
+    if mcp_registry and name in BRIDGE_TOOL_NAMES:
+        return MCPToolSearchRouter(mcp_registry).execute(name, args)
     if mcp_registry and mcp_registry.has_tool(name):
         return mcp_registry.call_tool(name, args)
     raise KeyError(f"unknown tool: {name}")
@@ -345,13 +356,13 @@ def prompt_user(input_fn=None) -> str:
 
 def run(argv=None):
     args = parse_args(argv)
-    chat_session = start_session(args)
-    restore_messages(chat_session)
-    logger.info(format_session_log(chat_session.id))
-
     mcp_registry = load_default_mcp_registry()
     if mcp_registry.tool_schemas:
         logger.info(format_loaded_tools_log(len(mcp_registry.tool_schemas)))
+
+    chat_session = start_session(args, mcp_registry)
+    restore_messages(chat_session, mcp_registry)
+    logger.info(format_session_log(chat_session.id))
 
     try:
         while True:

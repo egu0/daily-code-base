@@ -165,3 +165,36 @@ def test_main_dispatcher_uses_mcp_registry_for_prefixed_tools():
         "tool": "echo",
         "arguments": {"text": "hello"},
     }
+
+
+def test_main_combined_tool_schemas_exposes_bridge_tools_instead_of_mcp_tools():
+    from helloworld.main import combined_tool_schemas
+
+    registry = MCPToolRegistry(
+        [{"type": "mcp", "name": "fake", "command": "fake-command"}],
+        client_factory=FakeMCPClient.from_config,
+    )
+
+    names = [schema["function"]["name"] for schema in combined_tool_schemas(registry)]
+
+    assert "tool_search" in names
+    assert "tool_describe" in names
+    assert "tool_call" in names
+    assert "fake__echo" not in names
+
+
+def test_main_dispatcher_uses_tool_call_bridge_for_mcp_tools():
+    from helloworld.main import execute_tool
+
+    registry = MCPToolRegistry(
+        [{"type": "mcp", "name": "fake", "command": "fake-command"}],
+        client_factory=FakeMCPClient.from_config,
+    )
+
+    result = execute_tool(
+        "tool_call",
+        {"name": "fake__echo", "arguments": {"text": "hello"}},
+        registry,
+    )
+
+    assert result == {"tool": "echo", "arguments": {"text": "hello"}}
