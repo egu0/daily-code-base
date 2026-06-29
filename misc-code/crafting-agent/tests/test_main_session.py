@@ -55,6 +55,43 @@ def test_start_session_resumes_latest(monkeypatch, tmp_path):
     assert session.id == "sess_new"
 
 
+def test_list_skills_prints_multiline_skill_blocks(monkeypatch, tmp_path, capsys):
+    skills_root = tmp_path / "skills"
+    first_dir = skills_root / "frontend-design"
+    second_dir = skills_root / "weather"
+    first_dir.mkdir(parents=True)
+    second_dir.mkdir()
+    (first_dir / "SKILL.md").write_text(
+        "---\n"
+        "name: frontend-design\n"
+        "description: Guidance for distinctive UI design.\n"
+        "---\n",
+        encoding="utf-8",
+    )
+    (second_dir / "SKILL.md").write_text(
+        "---\n"
+        "name: weather\n"
+        "description: Weather planning guidance.\n"
+        "---\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(main, "SKILLS_DIR", skills_root)
+
+    with pytest.raises(SystemExit) as exc:
+        main.start_session(main.parse_args(["--list-skills"]))
+
+    assert exc.value.code == 0
+    assert capsys.readouterr().out == (
+        "name: frontend-design\n"
+        "description: Guidance for distinctive UI design.\n"
+        f"path: {first_dir / 'SKILL.md'}\n"
+        "\n"
+        "name: weather\n"
+        "description: Weather planning guidance.\n"
+        f"path: {second_dir / 'SKILL.md'}\n"
+    )
+
+
 def test_main_no_longer_exposes_trim_messages():
     assert not hasattr(main, "trim_messages")
 

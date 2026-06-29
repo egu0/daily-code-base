@@ -83,10 +83,24 @@ def parse_args(argv=None):
         action="store_true",
         help="List saved sessions and exit.",
     )
+    parser.add_argument(
+        "--list-skills",
+        action="store_true",
+        help="List enabled skills and exit.",
+    )
     return parser.parse_args(argv)
 
 
 def start_session(args, mcp_registry: MCPToolRegistry | None = None) -> ChatSession:
+    if args.list_skills:
+        for index, skill in enumerate(discover_skills(SKILLS_DIR)):
+            if index:
+                print()
+            print(f"name: {skill.name}")
+            print(f"description: {skill.description}")
+            print(f"path: {skill.path}")
+        raise SystemExit(0)
+
     if args.list_sessions:
         from .session_store import list_sessions
 
