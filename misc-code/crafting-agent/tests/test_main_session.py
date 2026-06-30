@@ -122,10 +122,7 @@ def test_list_skills_prints_multiline_skill_blocks(monkeypatch, tmp_path, capsys
         encoding="utf-8",
     )
     (second_dir / "SKILL.md").write_text(
-        "---\n"
-        "name: weather\n"
-        "description: Weather planning guidance.\n"
-        "---\n",
+        "---\n" "name: weather\n" "description: Weather planning guidance.\n" "---\n",
         encoding="utf-8",
     )
     monkeypatch.setattr(main, "SKILLS_DIR", skills_root)
@@ -222,7 +219,9 @@ def test_run_prints_newline_between_streamed_reasoning_and_content(
         lambda session, mcp_registry=None, workdir=None: None,
     )
     monkeypatch.setattr(main, "persist_messages", lambda session: None)
-    monkeypatch.setattr(main, "record_request", lambda session, payload: tmp_path / "1.json")
+    monkeypatch.setattr(
+        main, "record_request", lambda session, payload: tmp_path / "1.json"
+    )
     monkeypatch.setattr(main, "record_response", lambda path, response: None)
     monkeypatch.setattr(main, "close_process_manager", lambda: None)
     monkeypatch.setattr(main, "agent_workdir", lambda path=None: tmp_path)
@@ -301,7 +300,9 @@ def test_run_prints_tool_result_after_tool_execution(monkeypatch, tmp_path, caps
         lambda session, mcp_registry=None, workdir=None: None,
     )
     monkeypatch.setattr(main, "persist_messages", lambda session: None)
-    monkeypatch.setattr(main, "record_request", lambda session, payload: tmp_path / "1.json")
+    monkeypatch.setattr(
+        main, "record_request", lambda session, payload: tmp_path / "1.json"
+    )
     monkeypatch.setattr(main, "record_response", lambda path, response: None)
     monkeypatch.setattr(main, "close_process_manager", lambda: None)
     monkeypatch.setattr(main, "agent_workdir", lambda path=None: tmp_path)
@@ -360,8 +361,7 @@ def test_cli_keyboard_interrupt_prints_resume_hint(monkeypatch, capsys):
 
     assert exit_code == 130
     assert capsys.readouterr().out == (
-        "\nGoodbye!\n"
-        "Resume chat: python -m helloworld.main --session sess_cli\n"
+        "\nGoodbye!\n" "Resume chat: hgent --session sess_cli\n"
     )
 
 
@@ -380,8 +380,7 @@ def test_prompt_user_keyboard_interrupt_prints_resume_hint(monkeypatch, capsys):
 
     assert exc.value.code == 0
     assert capsys.readouterr().out == (
-        "\nGoodbye!\n"
-        "Resume chat: python -m helloworld.main --session sess_prompt\n"
+        "\nGoodbye!\n" "Resume chat: hgent --session sess_prompt\n"
     )
 
 
@@ -477,7 +476,9 @@ def test_initial_messages_includes_agent_workdir(monkeypatch, tmp_path):
 
     assert "Current project directory:" in system_message
     assert str(workdir) in system_message
-    assert "If a file path is relative, resolve it from this directory" in system_message
+    assert (
+        "If a file path is relative, resolve it from this directory" in system_message
+    )
 
 
 def test_start_session_creates_system_message_with_workdir(monkeypatch, tmp_path):
@@ -624,8 +625,7 @@ def test_format_assistant_display_handles_reasoning_without_content():
         tool_calls = [object()]
 
     assert main.format_assistant_display(Message()) == (
-        "\033[2mAgent reasoning:\n"
-        "Need a tool call.\033[0m"
+        "\033[2mAgent reasoning:\n" "Need a tool call.\033[0m"
     )
 
 

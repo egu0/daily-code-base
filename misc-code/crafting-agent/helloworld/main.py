@@ -37,10 +37,10 @@ ANSI_APPROVAL = "\033[35m"
 ANSI_RESET = "\033[0m"
 
 ROLE_COLORS = {
-    "system": "\033[2m",       # dim
-    "user": "\033[32m",        # green
-    "assistant": "\033[36m",   # cyan
-    "tool": "\033[33m",        # yellow
+    "system": "\033[2m",  # dim
+    "user": "\033[32m",  # green
+    "assistant": "\033[36m",  # cyan
+    "tool": "\033[33m",  # yellow
 }
 ROLE_COLOR_RESET = "\033[0m"
 
@@ -254,7 +254,9 @@ def inspect_session(session_id: str):
         if tool_calls:
             for tc in tool_calls:
                 func = tc.get("function", {})
-                print(f"  → tool_call: {func.get('name', '?')}({func.get('arguments', '')})")
+                print(
+                    f"  → tool_call: {func.get('name', '?')}({func.get('arguments', '')})"
+                )
 
 
 def local_timezone():
@@ -283,9 +285,9 @@ def format_usage_log(prompt_tokens, completion_tokens):
 
 def format_goodbye_message(session_id=None):
     if session_id:
-        resume_command = f"python -m helloworld.main --session {session_id}"
+        resume_command = f"hgent --session {session_id}"
     else:
-        resume_command = "python -m helloworld.main --resume-latest"
+        resume_command = "hgent --resume-latest"
     return f"Goodbye!\nResume chat: {resume_command}"
 
 
@@ -356,7 +358,6 @@ def format_tool_approval_details(name, args):
 
 def format_tool_approval_question():
     return f"{ANSI_APPROVAL}Proceed? [Y/n]: {ANSI_RESET}"
-
 
 
 def approve_tool_call(name, args, input_fn=None):
