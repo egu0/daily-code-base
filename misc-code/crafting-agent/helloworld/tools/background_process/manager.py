@@ -7,9 +7,13 @@ import threading
 from datetime import datetime, timezone
 from pathlib import Path
 
+from helloworld.config import agent_home
 
-BASE_DIR = Path("/tmp/.helloworld/processes")
 MAX_OUTPUT_LINES = 10_000  # cap per log file
+
+
+def default_process_dir() -> Path:
+    return agent_home() / "processes"
 
 
 def _now_iso() -> str:
@@ -34,9 +38,10 @@ def _format_duration(start_iso: str) -> str:
 
 class ProcessManager:
     def __init__(self) -> None:
-        BASE_DIR.mkdir(parents=True, exist_ok=True)
+        self._base_dir = default_process_dir()
+        self._base_dir.mkdir(parents=True, exist_ok=True)
         self._lock = threading.RLock()
-        self._registry_path = BASE_DIR / "registry.json"
+        self._registry_path = self._base_dir / "registry.json"
         self._processes: dict[str, dict] = {}
         self._popen_objects: dict[str, subprocess.Popen] = {}
         self._load_registry()
@@ -91,7 +96,7 @@ class ProcessManager:
             return f"Error: cwd is not a directory: {work_dir}"
 
         proc_id = secrets.token_hex(4)  # 8-char hex
-        proc_dir = BASE_DIR / proc_id
+        proc_dir = self._base_dir / proc_id
         proc_dir.mkdir(parents=True, exist_ok=True)
         stdout_path = proc_dir / "stdout.log"
         stderr_path = proc_dir / "stderr.log"
@@ -265,7 +270,7 @@ class ProcessManager:
         if info is None:
             return f"Error: no process with id '{process_id}'"
 
-        proc_dir = BASE_DIR / process_id
+        proc_dir = self._base_dir / process_id
         parts: list[str] = []
 
         if stream in ("stdout", "both"):
@@ -325,14 +330,45 @@ class ProcessManager:
     # --- list_all ------------------------------------------------------------
 
     def list_all(self) -> str:
+        self._clean_stale()
         with self._lock:
             if not self._processes:
                 return "No background processes"
 
             items = list(self._processes.items())
 
-        lines = [f"{len(items)} background process(es):"]
-        for proc_id, info in sorted(items):
+        counts: dict[str, int] = {}
+        for _, info in items:
+            status = info.get("status", "unknown")
+            counts[status] = counts.get(status, 0) + 1
+
+        preferred_status_order = ("running", "exited", "dead")
+        summary_parts = [
+            f"{counts[status]} {status}"
+            for status in preferred_status_order
+            if status in counts
+        ]
+        summary_parts.extend(
+            f"{count} {status}"
+            for status, count in sorted(counts.items(), key=lambda item: item[0])
+            if status not in preferred_status_order
+        )
+        lines = [
+            f"{len(items)} background process(es): " + ", ".join(summary_parts),
+            "Showing running processes only.",
+        ]
+
+        running_items = [
+            (proc_id, info)
+            for proc_id, info in items
+            if info.get("status", "unknown") == "running"
+        ]
+        if not running_items:
+            lines.append("No running background processes")
+            return "\n".join(lines)
+
+        lines.append("")
+        for proc_id, info in sorted(running_items):
             status = info.get("status", "unknown")
             runtime = _format_duration(info.get("start_time", ""))
             lines.append(

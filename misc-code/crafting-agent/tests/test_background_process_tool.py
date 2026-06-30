@@ -2,13 +2,38 @@ import sys
 import time
 from pathlib import Path
 
+import pytest
+
 ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
 from helloworld.tools import tool_schemas, tools_map
 from helloworld.tools.background_process.index import background_process, schema
-from helloworld.tools.background_process.manager import close_process_manager
+from helloworld.config import AGENT_HOME_ENV
+from helloworld.tools.background_process.manager import (
+    ProcessManager,
+    close_process_manager,
+    get_process_manager,
+)
+
+
+@pytest.fixture(autouse=True)
+def isolated_agent_home(monkeypatch, tmp_path):
+    close_process_manager()
+    monkeypatch.setenv(AGENT_HOME_ENV, str(tmp_path / ".hello-agent"))
+    yield
+    close_process_manager()
+
+
+def test_process_manager_stores_registry_under_agent_home(monkeypatch, tmp_path):
+    agent_home = tmp_path / ".hello-agent"
+    monkeypatch.setenv(AGENT_HOME_ENV, str(agent_home))
+
+    manager = ProcessManager()
+
+    assert manager._registry_path == agent_home / "processes" / "registry.json"
+    assert ".helloworld" not in str(manager._registry_path)
 
 
 def test_start_and_stop():
@@ -83,8 +108,51 @@ def test_list():
     lst = background_process(action="list")
     assert proc_id in lst
     assert "sleep 30" in lst
+    assert "ago" in lst
 
     background_process(action="stop", process_id=proc_id)
+
+
+def test_list_summarizes_all_processes_but_only_shows_running():
+    mgr = get_process_manager()
+    mgr._is_pid_alive = lambda pid: True
+    mgr._processes = {
+        "run12345": {
+            "command": "npm run dev",
+            "cwd": "/tmp/project",
+            "pid": 1001,
+            "start_time": "2026-06-30T00:00:00+00:00",
+            "status": "running",
+            "exit_code": None,
+        },
+        "exit1234": {
+            "command": "python old_job.py",
+            "cwd": "/tmp/project",
+            "pid": 1002,
+            "start_time": "2026-06-30T00:00:00+00:00",
+            "status": "exited",
+            "exit_code": 0,
+        },
+        "dead1234": {
+            "command": "node stale.js",
+            "cwd": "/tmp/project",
+            "pid": 1003,
+            "start_time": "2026-06-30T00:00:00+00:00",
+            "status": "dead",
+            "exit_code": None,
+        },
+    }
+
+    lst = background_process(action="list")
+
+    assert lst.splitlines()[0] == (
+        "3 background process(es): 1 running, 1 exited, 1 dead"
+    )
+    assert "Showing running processes only." in lst
+    assert "run12345  running  npm run dev  (pid 1001, started " in lst
+    assert " ago)" in lst
+    assert "python old_job.py" not in lst
+    assert "node stale.js" not in lst
 
 
 def test_error_on_unknown_process():
