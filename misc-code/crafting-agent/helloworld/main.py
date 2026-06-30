@@ -420,7 +420,7 @@ def value_from(obj, name, default=None):
     return getattr(obj, name, default)
 
 
-def stream_completion_to_response(stream, write_text=None):
+def stream_completion_to_response(stream, write_text=None, write_reasoning=None):
     role = "assistant"
     content_parts = []
     reasoning_parts = []
@@ -452,6 +452,8 @@ def stream_completion_to_response(stream, write_text=None):
         )
         if reasoning:
             reasoning_parts.append(reasoning)
+            if write_reasoning:
+                write_reasoning(reasoning)
 
         for tool_call in value_from(delta, "tool_calls", []) or []:
             index = value_from(tool_call, "index")
@@ -559,20 +561,33 @@ def run(argv=None):
                 }
                 request_log_path = record_request(chat_session, request_payload)
                 content_streamed = False
+                reasoning_streamed = False
 
                 def write_text(text):
                     nonlocal content_streamed
                     if not content_streamed:
+                        if reasoning_streamed:
+                            print()
                         print("Agent:")
                         content_streamed = True
                     print(text, end="", flush=True)
+
+                def write_reasoning(text):
+                    nonlocal reasoning_streamed
+                    if not reasoning_streamed:
+                        print(dim_text("Agent reasoning:"))
+                        reasoning_streamed = True
+                    print(dim_text(text), end="", flush=True)
 
                 resp = stream_completion_to_response(
                     client.chat.completions.create(
                         **request_payload,
                     ),
                     write_text=write_text,
+                    write_reasoning=write_reasoning,
                 )
+                if reasoning_streamed and not content_streamed:
+                    print()
                 if content_streamed:
                     print()
                 record_response(request_log_path, completion_response_to_json(resp))
@@ -584,7 +599,11 @@ def run(argv=None):
                         )
                     )
                 msg = resp.choices[0].message
-                display = "" if content_streamed else format_assistant_display(msg)
+                display = (
+                    ""
+                    if content_streamed or reasoning_streamed
+                    else format_assistant_display(msg)
+                )
                 if display:
                     print(display)
 

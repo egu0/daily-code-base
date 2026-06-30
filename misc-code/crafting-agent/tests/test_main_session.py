@@ -189,6 +189,57 @@ def test_run_changes_to_agent_workdir(monkeypatch, tmp_path):
     assert observed["cwd"] == workdir
 
 
+def test_run_prints_newline_between_streamed_reasoning_and_content(
+    monkeypatch, tmp_path, capsys
+):
+    prompts = iter(["hi"])
+    stream = [
+        chunk(SimpleNamespace(role="assistant", reasoning_content="No tools needed.")),
+        chunk(SimpleNamespace(content="Hello!"), finish_reason="stop"),
+    ]
+
+    monkeypatch.setattr(
+        main,
+        "load_default_mcp_registry",
+        lambda: SimpleNamespace(tool_schemas=[], close=lambda: None),
+    )
+    monkeypatch.setattr(
+        main,
+        "start_session",
+        lambda args, mcp_registry=None: SimpleNamespace(id="sess_test", messages=[]),
+    )
+    monkeypatch.setattr(main, "restore_messages", lambda session, mcp_registry=None: None)
+    monkeypatch.setattr(main, "persist_messages", lambda session: None)
+    monkeypatch.setattr(main, "record_request", lambda session, payload: tmp_path / "1.json")
+    monkeypatch.setattr(main, "record_response", lambda path, response: None)
+    monkeypatch.setattr(main, "close_process_manager", lambda: None)
+    monkeypatch.setattr(main, "agent_workdir", lambda path=None: tmp_path)
+    monkeypatch.setattr(
+        main,
+        "client",
+        SimpleNamespace(
+            chat=SimpleNamespace(
+                completions=SimpleNamespace(create=lambda **kwargs: stream)
+            )
+        ),
+    )
+
+    def prompt_once():
+        try:
+            return next(prompts)
+        except StopIteration:
+            raise RuntimeError("stop loop")
+
+    monkeypatch.setattr(main, "prompt_user", prompt_once)
+
+    with pytest.raises(RuntimeError, match="stop loop"):
+        main.run([])
+
+    output = capsys.readouterr().out
+    assert "No tools needed.\033[0m\nAgent:" in output
+    assert "No tools needed.\033[0mAgent:" not in output
+
+
 def test_discover_skills_reads_name_and_description_from_skill_markdown(tmp_path):
     skill_dir = tmp_path / "skills" / "frontend-design"
     skill_dir.mkdir(parents=True)
@@ -587,6 +638,27 @@ def test_stream_completion_to_response_streams_text_and_builds_message():
     assert resp.choices[0].message.content == "Hello"
     assert resp.choices[0].message.tool_calls is None
     assert resp.choices[0].finish_reason == "stop"
+
+
+def test_stream_completion_to_response_streams_reasoning_and_builds_message():
+    content_writes = []
+    reasoning_writes = []
+    stream = [
+        chunk(SimpleNamespace(role="assistant", reasoning_content="Think ")),
+        chunk(SimpleNamespace(reasoning_content="first.")),
+        chunk(SimpleNamespace(content="Answer."), finish_reason="stop"),
+    ]
+
+    resp = main.stream_completion_to_response(
+        stream,
+        write_text=content_writes.append,
+        write_reasoning=reasoning_writes.append,
+    )
+
+    assert reasoning_writes == ["Think ", "first."]
+    assert content_writes == ["Answer."]
+    assert resp.choices[0].message.reasoning_content == "Think first."
+    assert resp.choices[0].message.content == "Answer."
 
 
 def test_stream_completion_to_response_reconstructs_tool_call_deltas():
