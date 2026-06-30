@@ -15,6 +15,7 @@ uv run --with jupyter jupyter lab
 Add this to `~/.zshrc` to make `hgent` available everywhere:
 
 ```zsh
+# copy .env.example to .env, then fill needed api keys.
 export HELLO_AGENT_HOME="$HOME/.hello-agent"
 hgent() {
   local hgent_cwd="$PWD"
