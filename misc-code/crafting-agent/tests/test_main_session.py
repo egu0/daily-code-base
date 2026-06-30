@@ -4,6 +4,7 @@ import pytest
 from datetime import timezone, timedelta
 from pathlib import Path
 from types import SimpleNamespace
+from prompt_toolkit.formatted_text import ANSI
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
@@ -381,23 +382,85 @@ def test_format_status_logs_use_compact_style():
     )
 
 
+def test_format_tool_args_shows_full_apply_patch_content():
+    patch = "a" * 120
+
+    displayed_args = main.format_tool_args({"patch": patch}, "apply_patch")
+
+    assert displayed_args == f"patch='{patch}'"
+    assert "..." not in displayed_args
+
+
+def test_format_displayed_tool_args_does_not_truncate_apply_patch_content():
+    patch = "a" * 120
+
+    displayed_args = main.format_displayed_tool_args({"patch": patch}, "apply_patch")
+
+    assert displayed_args == f"patch='{patch}'"
+    assert "..." not in displayed_args
+
+
+def test_format_displayed_tool_args_truncates_other_long_tool_args():
+    displayed_args = main.format_displayed_tool_args({"query": "a" * 120}, "search")
+
+    assert displayed_args == "query='" + ("a" * 43) + " ..."
+
+
 def test_format_tool_approval_prompt_includes_tool_and_arguments():
     assert main.format_tool_approval_prompt("read", {"path": "README.md"}) == (
-        "Approve tool call read(path='README.md')? [Y/n]: "
+        f"{main.ANSI_APPROVAL}Approve tool call read:{main.ANSI_RESET}\n"
+        f"  {main.ANSI_DIM}path{main.ANSI_RESET}: README.md\n"
+        f"{main.ANSI_APPROVAL}Proceed? [Y/n]: {main.ANSI_RESET}"
     )
 
 
-def test_format_tool_approval_prompt_truncates_apply_patch_content():
+def test_format_tool_approval_prompt_formats_command_parameters_readably():
+    prompt = main.format_tool_approval_prompt(
+        "bash",
+        {
+            "command": "pytest tests/test_main_session.py -q",
+            "cwd": "/tmp/project",
+            "timeout": 30,
+        },
+    )
+
+    assert prompt == (
+        f"{main.ANSI_APPROVAL}Approve tool call bash:{main.ANSI_RESET}\n"
+        f"  {main.ANSI_DIM}command{main.ANSI_RESET}: pytest tests/test_main_session.py -q\n"
+        f"  {main.ANSI_DIM}cwd{main.ANSI_RESET}: /tmp/project\n"
+        f"  {main.ANSI_DIM}timeout{main.ANSI_RESET}: 30\n"
+        f"{main.ANSI_APPROVAL}Proceed? [Y/n]: {main.ANSI_RESET}"
+    )
+
+
+def test_format_tool_approval_prompt_pretty_prints_structured_parameters():
+    prompt = main.format_tool_approval_prompt(
+        "remote__search",
+        {"query": {"text": "agent frameworks", "limit": 3}},
+    )
+
+    assert prompt == (
+        f"{main.ANSI_APPROVAL}Approve tool call remote__search:{main.ANSI_RESET}\n"
+        f"  {main.ANSI_DIM}query{main.ANSI_RESET}:\n"
+        "    {\n"
+        '      "limit": 3,\n'
+        '      "text": "agent frameworks"\n'
+        "    }\n"
+        f"{main.ANSI_APPROVAL}Proceed? [Y/n]: {main.ANSI_RESET}"
+    )
+
+
+def test_format_tool_approval_prompt_shows_full_apply_patch_content():
     patch = "a" * 120
 
     prompt = main.format_tool_approval_prompt("apply_patch", {"patch": patch})
 
     assert prompt == (
-        "Approve tool call apply_patch("
-        f"patch='{patch[:100]} ...'"
-        ")? [Y/n]: "
+        f"{main.ANSI_APPROVAL}Approve tool call apply_patch:{main.ANSI_RESET}\n"
+        f"  {main.ANSI_DIM}patch{main.ANSI_RESET}: {patch}\n"
+        f"{main.ANSI_APPROVAL}Proceed? [Y/n]: {main.ANSI_RESET}"
     )
-    assert patch not in prompt
+    assert "..." not in prompt
 
 
 def test_approve_tool_call_accepts_enter_y_and_yes():
@@ -408,11 +471,42 @@ def test_approve_tool_call_accepts_enter_y_and_yes():
         return "yes"
 
     assert main.approve_tool_call("read", {"path": "README.md"}, approving_input)
-    assert prompts == ["Approve tool call read(path='README.md')? [Y/n]: "]
+    assert prompts == [
+        f"{main.ANSI_APPROVAL}Approve tool call read:{main.ANSI_RESET}\n"
+        f"  {main.ANSI_DIM}path{main.ANSI_RESET}: README.md\n"
+        f"{main.ANSI_APPROVAL}Proceed? [Y/n]: {main.ANSI_RESET}"
+    ]
 
     assert main.approve_tool_call("read", {}, lambda _: "")
     assert main.approve_tool_call("read", {}, lambda _: "y")
     assert main.approve_tool_call("read", {}, lambda _: "YES")
+
+
+def test_approve_tool_call_prints_details_and_prompts_with_short_ansi_question(
+    monkeypatch,
+):
+    prompts = []
+    printed = []
+    patch = "*** Begin Patch\n" + ("x" * 200) + "\n*** End Patch"
+
+    def approving_prompt(prompt):
+        prompts.append(prompt)
+        return "yes"
+
+    def capture_print(text):
+        printed.append(text)
+
+    monkeypatch.setattr(main, "pt_prompt", approving_prompt)
+    monkeypatch.setattr(main, "print_formatted_text", capture_print)
+
+    assert main.approve_tool_call("apply_patch", {"patch": patch})
+    assert isinstance(prompts[0], ANSI)
+    assert len(str(prompts[0])) < 80
+
+    output = str(printed[0])
+    assert "*** Begin Patch" in output
+    assert "x" * 200 in output
+    assert "*** End Patch" in output
 
 
 def test_approve_tool_call_rejects_n_and_no():

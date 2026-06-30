@@ -6,6 +6,8 @@ import json
 import sys
 from types import SimpleNamespace
 from prompt_toolkit import prompt as pt_prompt
+from prompt_toolkit.formatted_text import ANSI
+from prompt_toolkit.shortcuts import print_formatted_text
 from .tools import tools_map, tool_schemas
 from .config import agent_workdir
 from .skills import SKILLS_DIR, discover_skills, format_skill_index
@@ -31,6 +33,7 @@ from .tools.background_process.manager import close_process_manager
 
 LOG_FORMAT = "<level>{message}</level>"
 ANSI_DIM = "\033[2m"
+ANSI_APPROVAL = "\033[35m"
 ANSI_RESET = "\033[0m"
 
 ROLE_COLORS = {
@@ -264,22 +267,71 @@ def format_tool_log(name, displayed_args):
 def format_tool_args(args, tool_name=None):
     displayed = []
     for key, value in args.items():
-        if tool_name == "apply_patch" and key == "patch" and isinstance(value, str):
-            value = value[:100] + " ..." if len(value) > 100 else value
         displayed.append(f"{key}={value!r}")
     return ", ".join(displayed)
 
 
+def format_displayed_tool_args(args, tool_name=None):
+    displayed_args = format_tool_args(args, tool_name)
+    if tool_name == "apply_patch":
+        return displayed_args
+    return displayed_args if len(displayed_args) < 50 else displayed_args[:50] + " ..."
+
+
+def format_tool_approval_value(value):
+    if isinstance(value, str):
+        return value
+    if isinstance(value, (dict, list, tuple)):
+        try:
+            return json.dumps(value, ensure_ascii=False, indent=2, sort_keys=True)
+        except TypeError:
+            return repr(value)
+    if value is None or isinstance(value, bool):
+        return json.dumps(value)
+    return str(value)
+
+
+def format_tool_approval_args(args, tool_name=None):
+    lines = []
+    for key, value in args.items():
+        formatted = format_tool_approval_value(value)
+        displayed_key = f"{ANSI_DIM}{key}{ANSI_RESET}"
+        if "\n" in formatted:
+            lines.append(f"  {displayed_key}:")
+            lines.extend(f"    {line}" for line in formatted.splitlines())
+        else:
+            lines.append(f"  {displayed_key}: {formatted}")
+    return "\n".join(lines)
+
+
 def format_tool_approval_prompt(name, args):
-    return f"Approve tool call {name}({format_tool_args(args, name)})? [Y/n]: "
+    displayed_args = format_tool_approval_args(args, name)
+    header = f"{ANSI_APPROVAL}Approve tool call {name}:{ANSI_RESET}"
+    question = f"{ANSI_APPROVAL}Proceed? [Y/n]: {ANSI_RESET}"
+    if displayed_args:
+        return f"{header}\n{displayed_args}\n{question}"
+    return f"{header}\n{question}"
+
+
+def format_tool_approval_details(name, args):
+    displayed_args = format_tool_approval_args(args, name)
+    header = f"{ANSI_APPROVAL}Approve tool call {name}:{ANSI_RESET}"
+    if displayed_args:
+        return f"{header}\n{displayed_args}"
+    return header
+
+
+def format_tool_approval_question():
+    return f"{ANSI_APPROVAL}Proceed? [Y/n]: {ANSI_RESET}"
+
 
 
 def approve_tool_call(name, args, input_fn=None):
-    answer = (
-        (input_fn or (lambda p: pt_prompt(p)))(format_tool_approval_prompt(name, args))
-        .strip()
-        .lower()
-    )
+    if input_fn:
+        answer = input_fn(format_tool_approval_prompt(name, args)).strip().lower()
+    else:
+        print_formatted_text(ANSI(format_tool_approval_details(name, args)))
+        answer = pt_prompt(ANSI(format_tool_approval_question())).strip().lower()
     return answer not in {"n", "no"}
 
 
@@ -566,11 +618,9 @@ def run(argv=None):
                     name = tc.function.name
                     args = json.loads(tc.function.arguments)
 
-                    s_args = format_tool_args(args, name)
-                    displayed_args = (
-                        s_args if len(s_args) < 50 else s_args[:50] + " ..."
+                    logger.debug(
+                        format_tool_log(name, format_displayed_tool_args(args, name))
                     )
-                    logger.debug(format_tool_log(name, displayed_args))
 
                     result = execute_tool_with_approval(name, args, mcp_registry)
 
