@@ -63,3 +63,15 @@ def test_bash_tool_is_registered():
     assert schema["function"]["name"] == "bash"
     assert tools_map["bash"] is bash
     assert any(item["function"]["name"] == "bash" for item in tool_schemas)
+
+
+def test_bash_schema_guides_away_from_background_servers():
+    description = schema["function"]["description"]
+    command_description = schema["function"]["parameters"]["properties"]["command"][
+        "description"
+    ]
+
+    assert "Do not use" in description
+    assert "long-running servers" in description
+    assert "background_process" in description
+    assert "background a process with &" in command_description

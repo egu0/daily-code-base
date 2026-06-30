@@ -115,6 +115,20 @@ def test_tool_is_registered():
     )
 
 
+def test_schema_recommends_background_process_for_servers():
+    description = schema["function"]["description"]
+    command_description = schema["function"]["parameters"]["properties"]["command"][
+        "description"
+    ]
+
+    assert "dev servers" in description
+    assert "web servers" in description
+    assert "watchers" in description
+    assert "read_output" in description
+    assert "stop" in description
+    assert "npm run dev" in command_description
+
+
 def test_stale_detection():
     """Processes that have exited get marked as dead or exited."""
     result = background_process(action="start", command="true")  # exits immediately

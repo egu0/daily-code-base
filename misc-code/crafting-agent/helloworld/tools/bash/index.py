@@ -74,14 +74,21 @@ schema = {
         "description": (
             "Execute a shell command with optional working directory and timeout. "
             "Returns exit code, stdout, and stderr. Default timeout is 120s, max 600s. "
-            "Output is truncated at 10,000 characters."
+            "Output is truncated at 10,000 characters. "
+            "Do not use this for long-running servers, dev servers, watchers, or "
+            "commands that background a process with &; use background_process "
+            "instead, then read_output/stop."
         ),
         "parameters": {
             "type": "object",
             "properties": {
                 "command": {
                     "type": "string",
-                    "description": "The shell command to execute.",
+                    "description": (
+                        "The shell command to execute. Prefer short, finite "
+                        "commands. Do not background a process with & to run a "
+                        "server; use background_process for that workflow."
+                    ),
                 },
                 "cwd": {
                     "type": "string",

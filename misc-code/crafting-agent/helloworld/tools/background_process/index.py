@@ -55,7 +55,11 @@ schema = {
     "function": {
         "name": "background_process",
         "description": (
-            "Manage long-running background processes (e.g., dev servers). "
+            "Manage long-running background processes such as dev servers, "
+            "web servers, watchers, and REPL-like commands. "
+            "Use this instead of bash for workflows like starting a server, "
+            "waiting briefly, using another tool or bash command to inspect it, "
+            "then calling read_output or stop. "
             "Actions: start (launch a process), stop (kill by ID), "
             "status (get runtime info), read_output (read stdout/stderr logs), "
             "send_input (write to stdin), list (list all processes). "
@@ -70,11 +74,22 @@ schema = {
                         "The action to perform: 'start', 'stop', 'status', "
                         "'read_output', 'send_input', or 'list'."
                     ),
-                    "enum": ["start", "stop", "status", "read_output", "send_input", "list"],
+                    "enum": [
+                        "start",
+                        "stop",
+                        "status",
+                        "read_output",
+                        "send_input",
+                        "list",
+                    ],
                 },
                 "command": {
                     "type": "string",
-                    "description": "The shell command to run. Required for 'start'.",
+                    "description": (
+                        "The shell command to run. Required for 'start'. "
+                        "Examples: 'npm run dev', 'node index.js', "
+                        "'python -m http.server 8000'."
+                    ),
                 },
                 "cwd": {
                     "type": "string",
