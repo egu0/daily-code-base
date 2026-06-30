@@ -53,6 +53,7 @@ models_context_ = {"deepseek-v4-flash": 1000_000, "deepseek-v4-pro": 1000_000}
 
 client = OpenAI(base_url="https://api.deepseek.com/", api_key=os.getenv("DEEPSEEK_KEY"))
 MODEL = "deepseek-v4-pro"
+active_session_id = None
 
 
 def initial_messages(
@@ -278,6 +279,14 @@ def format_request_log():
 
 def format_usage_log(prompt_tokens, completion_tokens):
     return f"✓ done · tokens in {prompt_tokens} / out {completion_tokens}"
+
+
+def format_goodbye_message(session_id=None):
+    if session_id:
+        resume_command = f"python -m helloworld.main --session {session_id}"
+    else:
+        resume_command = "python -m helloworld.main --resume-latest"
+    return f"Goodbye!\nResume chat: {resume_command}"
 
 
 def format_tool_log(name, displayed_args):
@@ -528,12 +537,12 @@ def stream_completion_to_response(stream, write_text=None, write_reasoning=None)
     return SimpleNamespace(choices=[choice], usage=usage)
 
 
-def prompt_user(input_fn=None) -> str:
+def prompt_user(input_fn=None, session_id=None) -> str:
     if input_fn is None:
         try:
             return pt_prompt("You: ").strip()
         except KeyboardInterrupt:
-            print("\nGoodbye!")
+            print(f"\n{format_goodbye_message(session_id)}")
             # os._exit avoids "Task exception was never retrieved"
             # warnings from prompt_toolkit's asyncio event loop
             # when combined with nest_asyncio.
@@ -542,6 +551,7 @@ def prompt_user(input_fn=None) -> str:
 
 
 def run(argv=None):
+    global active_session_id
     args = parse_args(argv)
     workdir = agent_workdir(args.workdir)
     os.chdir(workdir)
@@ -564,12 +574,13 @@ def run(argv=None):
         logger.info(format_loaded_tools_log(len(mcp_registry.tool_schemas)))
 
     chat_session = start_session(args, mcp_registry, workdir=workdir)
+    active_session_id = chat_session.id
     restore_messages(chat_session, mcp_registry, workdir=workdir)
     logger.info(format_session_log(chat_session.id))
 
     try:
         while True:
-            user_input = prompt_user()
+            user_input = prompt_user(session_id=chat_session.id)
             if len("".join(user_input.split())) == 0:
                 continue
             messages.append({"role": "user", "content": user_input})
@@ -678,8 +689,17 @@ def run(argv=None):
         close_process_manager()
 
 
-if __name__ == "__main__":
+def cli(argv=None):
     try:
-        run()
+        run(argv)
     except KeyboardInterrupt:
-        print("\nGoodbye!")
+        print(f"\n{format_goodbye_message(active_session_id)}")
+        return 130
+    except Exception as exc:
+        print(f"Error: {exc}")
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(cli())

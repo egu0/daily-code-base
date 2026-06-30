@@ -178,7 +178,7 @@ def test_run_changes_to_agent_workdir(monkeypatch, tmp_path):
     monkeypatch.setattr(
         main,
         "prompt_user",
-        lambda: (_ for _ in ()).throw(RuntimeError("stop loop")),
+        lambda **kwargs: (_ for _ in ()).throw(RuntimeError("stop loop")),
     )
     monkeypatch.setattr(main, "close_process_manager", lambda: None)
     monkeypatch.setattr(main, "agent_workdir", lambda path=None: workdir)
@@ -236,7 +236,7 @@ def test_run_prints_newline_between_streamed_reasoning_and_content(
         ),
     )
 
-    def prompt_once():
+    def prompt_once(**kwargs):
         try:
             return next(prompts)
         except StopIteration:
@@ -316,7 +316,7 @@ def test_run_prints_tool_result_after_tool_execution(monkeypatch, tmp_path, caps
         ),
     )
 
-    def prompt_once():
+    def prompt_once(**kwargs):
         try:
             return next(prompts)
         except StopIteration:
@@ -330,6 +330,94 @@ def test_run_prints_tool_result_after_tool_execution(monkeypatch, tmp_path, caps
     output = capsys.readouterr().out
     assert "[tool] read result:" in output
     assert "README text" in output
+
+
+def test_cli_reports_runtime_errors_without_traceback(monkeypatch, capsys):
+    monkeypatch.setattr(
+        main,
+        "run",
+        lambda argv=None: (_ for _ in ()).throw(RuntimeError("stream exploded")),
+    )
+
+    exit_code = main.cli([])
+
+    captured = capsys.readouterr()
+    assert exit_code == 1
+    assert captured.out == "Error: stream exploded\n"
+    assert "Traceback" not in captured.out
+    assert "Traceback" not in captured.err
+
+
+def test_cli_keyboard_interrupt_prints_resume_hint(monkeypatch, capsys):
+    monkeypatch.setattr(main, "active_session_id", "sess_cli")
+    monkeypatch.setattr(
+        main,
+        "run",
+        lambda argv=None: (_ for _ in ()).throw(KeyboardInterrupt()),
+    )
+
+    exit_code = main.cli([])
+
+    assert exit_code == 130
+    assert capsys.readouterr().out == (
+        "\nGoodbye!\n"
+        "Resume chat: python -m helloworld.main --session sess_cli\n"
+    )
+
+
+def test_prompt_user_keyboard_interrupt_prints_resume_hint(monkeypatch, capsys):
+    def interrupting_prompt(prompt):
+        raise KeyboardInterrupt
+
+    def stop_without_exiting(code):
+        raise SystemExit(code)
+
+    monkeypatch.setattr(main, "pt_prompt", interrupting_prompt)
+    monkeypatch.setattr(main.os, "_exit", stop_without_exiting)
+
+    with pytest.raises(SystemExit) as exc:
+        main.prompt_user(session_id="sess_prompt")
+
+    assert exc.value.code == 0
+    assert capsys.readouterr().out == (
+        "\nGoodbye!\n"
+        "Resume chat: python -m helloworld.main --session sess_prompt\n"
+    )
+
+
+def test_run_passes_session_id_to_prompt_user(monkeypatch, tmp_path):
+    observed = {}
+
+    monkeypatch.setattr(
+        main,
+        "load_default_mcp_registry",
+        lambda: SimpleNamespace(tool_schemas=[], close=lambda: None),
+    )
+    monkeypatch.setattr(
+        main,
+        "start_session",
+        lambda args, mcp_registry=None, workdir=None: SimpleNamespace(
+            id="sess_run", messages=[]
+        ),
+    )
+    monkeypatch.setattr(
+        main,
+        "restore_messages",
+        lambda session, mcp_registry=None, workdir=None: None,
+    )
+    monkeypatch.setattr(main, "close_process_manager", lambda: None)
+    monkeypatch.setattr(main, "agent_workdir", lambda path=None: tmp_path)
+
+    def capture_prompt(*, session_id=None):
+        observed["session_id"] = session_id
+        raise RuntimeError("stop loop")
+
+    monkeypatch.setattr(main, "prompt_user", capture_prompt)
+
+    with pytest.raises(RuntimeError, match="stop loop"):
+        main.run([])
+
+    assert observed["session_id"] == "sess_run"
 
 
 def test_discover_skills_reads_name_and_description_from_skill_markdown(tmp_path):
