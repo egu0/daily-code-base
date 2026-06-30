@@ -29,6 +29,7 @@ from .session_store import (
 )
 from datetime import datetime, timezone
 import argparse
+from dataclasses import dataclass
 from .tools.background_process.manager import close_process_manager
 
 LOG_FORMAT = "<level>{message}</level>"
@@ -339,10 +340,16 @@ def format_tool_approval_args(args, tool_name=None):
     return "\n".join(lines)
 
 
+@dataclass(frozen=True)
+class ToolApproval:
+    action: str
+    instruction: str | None = None
+
+
 def format_tool_approval_prompt(name, args):
     displayed_args = format_tool_approval_args(args, name)
     header = f"{ANSI_APPROVAL}Approve tool call {name}:{ANSI_RESET}"
-    question = f"{ANSI_APPROVAL}Proceed? [Y/n]: {ANSI_RESET}"
+    question = f"{ANSI_APPROVAL}Proceed? [Y/n/i]: {ANSI_RESET}"
     if displayed_args:
         return f"{header}\n{displayed_args}\n{question}"
     return f"{header}\n{question}"
@@ -357,16 +364,28 @@ def format_tool_approval_details(name, args):
 
 
 def format_tool_approval_question():
-    return f"{ANSI_APPROVAL}Proceed? [Y/n]: {ANSI_RESET}"
+    return f"{ANSI_APPROVAL}Proceed? [Y/n/i]: {ANSI_RESET}"
 
 
-def approve_tool_call(name, args, input_fn=None):
+def request_tool_approval(name, args, input_fn=None):
     if input_fn:
         answer = input_fn(format_tool_approval_prompt(name, args)).strip().lower()
     else:
         print_formatted_text(ANSI(format_tool_approval_details(name, args)))
         answer = pt_prompt(ANSI(format_tool_approval_question())).strip().lower()
-    return answer not in {"n", "no"}
+    if answer in {"n", "no"}:
+        return ToolApproval("reject")
+    if answer in {"i", "instruction"}:
+        if input_fn:
+            instruction = input_fn("Instruction for agent: ").strip()
+        else:
+            instruction = pt_prompt("Instruction for agent: ").strip()
+        return ToolApproval("reject_with_instruction", instruction)
+    return ToolApproval("approve")
+
+
+def approve_tool_call(name, args, input_fn=None):
+    return request_tool_approval(name, args, input_fn).action == "approve"
 
 
 def execute_tool_with_approval(
@@ -375,8 +394,11 @@ def execute_tool_with_approval(
     mcp_registry: MCPToolRegistry | None = None,
     input_fn=None,
 ):
-    if not approve_tool_call(name, args, input_fn):
+    approval = request_tool_approval(name, args, input_fn)
+    if approval.action == "reject":
         return "Tool call rejected by user"
+    if approval.action == "reject_with_instruction":
+        return f"Tool call rejected by user. Instruction: {approval.instruction}"
     return execute_tool(name, args, mcp_registry)
 
 

@@ -680,7 +680,7 @@ def test_format_tool_approval_prompt_includes_tool_and_arguments():
     assert main.format_tool_approval_prompt("read", {"path": "README.md"}) == (
         f"{main.ANSI_APPROVAL}Approve tool call read:{main.ANSI_RESET}\n"
         f"  {main.ANSI_DIM}path{main.ANSI_RESET}: README.md\n"
-        f"{main.ANSI_APPROVAL}Proceed? [Y/n]: {main.ANSI_RESET}"
+        f"{main.ANSI_APPROVAL}Proceed? [Y/n/i]: {main.ANSI_RESET}"
     )
 
 
@@ -699,7 +699,7 @@ def test_format_tool_approval_prompt_formats_command_parameters_readably():
         f"  {main.ANSI_DIM}command{main.ANSI_RESET}: pytest tests/test_main_session.py -q\n"
         f"  {main.ANSI_DIM}cwd{main.ANSI_RESET}: /tmp/project\n"
         f"  {main.ANSI_DIM}timeout{main.ANSI_RESET}: 30\n"
-        f"{main.ANSI_APPROVAL}Proceed? [Y/n]: {main.ANSI_RESET}"
+        f"{main.ANSI_APPROVAL}Proceed? [Y/n/i]: {main.ANSI_RESET}"
     )
 
 
@@ -716,7 +716,7 @@ def test_format_tool_approval_prompt_pretty_prints_structured_parameters():
         '      "limit": 3,\n'
         '      "text": "agent frameworks"\n'
         "    }\n"
-        f"{main.ANSI_APPROVAL}Proceed? [Y/n]: {main.ANSI_RESET}"
+        f"{main.ANSI_APPROVAL}Proceed? [Y/n/i]: {main.ANSI_RESET}"
     )
 
 
@@ -728,7 +728,7 @@ def test_format_tool_approval_prompt_shows_full_apply_patch_content():
     assert prompt == (
         f"{main.ANSI_APPROVAL}Approve tool call apply_patch:{main.ANSI_RESET}\n"
         f"  {main.ANSI_DIM}patch{main.ANSI_RESET}: {patch}\n"
-        f"{main.ANSI_APPROVAL}Proceed? [Y/n]: {main.ANSI_RESET}"
+        f"{main.ANSI_APPROVAL}Proceed? [Y/n/i]: {main.ANSI_RESET}"
     )
     assert "..." not in prompt
 
@@ -744,7 +744,7 @@ def test_approve_tool_call_accepts_enter_y_and_yes():
     assert prompts == [
         f"{main.ANSI_APPROVAL}Approve tool call read:{main.ANSI_RESET}\n"
         f"  {main.ANSI_DIM}path{main.ANSI_RESET}: README.md\n"
-        f"{main.ANSI_APPROVAL}Proceed? [Y/n]: {main.ANSI_RESET}"
+        f"{main.ANSI_APPROVAL}Proceed? [Y/n/i]: {main.ANSI_RESET}"
     ]
 
     assert main.approve_tool_call("read", {}, lambda _: "")
@@ -797,6 +797,38 @@ def test_execute_tool_with_approval_rejects_without_running_tool(monkeypatch):
     )
 
     assert result == "Tool call rejected by user"
+
+
+def test_execute_tool_with_approval_rejects_with_instruction_without_running_tool(
+    monkeypatch,
+):
+    prompts = []
+    answers = iter(["i", "Use docs/api.md instead."])
+
+    def fail_execute(*args, **kwargs):
+        raise AssertionError("tool should not run")
+
+    def scripted_input(prompt):
+        prompts.append(prompt)
+        return next(answers)
+
+    monkeypatch.setattr(main, "execute_tool", fail_execute)
+
+    result = main.execute_tool_with_approval(
+        "read",
+        {"path": "README.md"},
+        input_fn=scripted_input,
+    )
+
+    assert result == (
+        "Tool call rejected by user. Instruction: Use docs/api.md instead."
+    )
+    assert prompts == [
+        f"{main.ANSI_APPROVAL}Approve tool call read:{main.ANSI_RESET}\n"
+        f"  {main.ANSI_DIM}path{main.ANSI_RESET}: README.md\n"
+        f"{main.ANSI_APPROVAL}Proceed? [Y/n/i]: {main.ANSI_RESET}",
+        "Instruction for agent: ",
+    ]
 
 
 def test_execute_tool_with_approval_runs_when_approved(monkeypatch):
