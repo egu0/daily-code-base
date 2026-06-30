@@ -192,6 +192,58 @@ def test_run_changes_to_agent_workdir(monkeypatch, tmp_path):
     assert observed["cwd"] == workdir
 
 
+def test_run_logs_startup_summary_in_order(monkeypatch, tmp_path):
+    logs = []
+    skills_dir = tmp_path / "skills"
+    mcp_config_path = tmp_path / "mcp_config.json"
+
+    monkeypatch.setattr(
+        main,
+        "load_default_mcp_registry",
+        lambda: SimpleNamespace(tool_schemas=[{}, {}, {}], close=lambda: None),
+    )
+    monkeypatch.setattr(main, "SKILLS_DIR", skills_dir)
+    monkeypatch.setattr(main, "default_mcp_config_path", lambda: mcp_config_path)
+    monkeypatch.setattr(
+        main,
+        "discover_skills",
+        lambda path: [
+            SimpleNamespace(name="alpha", description="Alpha skill", path=path / "alpha"),
+            SimpleNamespace(name="beta", description="Beta skill", path=path / "beta"),
+        ],
+    )
+    monkeypatch.setattr(
+        main,
+        "start_session",
+        lambda args, mcp_registry=None, workdir=None: SimpleNamespace(
+            id="sess_test", messages=[]
+        ),
+    )
+    monkeypatch.setattr(
+        main,
+        "restore_messages",
+        lambda session, mcp_registry=None, workdir=None: None,
+    )
+    monkeypatch.setattr(
+        main,
+        "prompt_user",
+        lambda **kwargs: (_ for _ in ()).throw(RuntimeError("stop loop")),
+    )
+    monkeypatch.setattr(main, "close_process_manager", lambda: None)
+    monkeypatch.setattr(main, "agent_workdir", lambda path=None: tmp_path)
+    monkeypatch.setattr(main.logger, "info", logs.append)
+
+    with pytest.raises(RuntimeError, match="stop loop"):
+        main.run([])
+
+    assert logs[:4] == [
+        "• session sess_test",
+        f"• loaded 3 MCP tools · config {mcp_config_path}",
+        f"• loaded 2 skills · dir {skills_dir}",
+        f"• workdir {tmp_path}",
+    ]
+
+
 def test_run_prints_newline_between_streamed_reasoning_and_content(
     monkeypatch, tmp_path, capsys
 ):
@@ -644,7 +696,13 @@ def test_log_format_omits_timestamp_and_prints_message_only():
 
 def test_format_status_logs_use_compact_style():
     assert main.format_session_log("sess_123") == "• session sess_123"
-    assert main.format_loaded_tools_log(3) == "• loaded 3 MCP tools"
+    assert main.format_loaded_tools_log(3, "/tmp/mcp.json") == (
+        "• loaded 3 MCP tools · config /tmp/mcp.json"
+    )
+    assert main.format_loaded_skills_log(2, "/tmp/skills") == (
+        "• loaded 2 skills · dir /tmp/skills"
+    )
+    assert main.format_workdir_log("/tmp/project") == "• workdir /tmp/project"
     assert main.format_request_log() == "› requesting model"
     assert main.format_usage_log(3032, 69) == "✓ done · tokens in 3032 / out 69"
     assert main.format_tool_log("read", "path='README.md'") == (

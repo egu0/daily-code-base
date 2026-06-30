@@ -9,7 +9,7 @@ from prompt_toolkit import prompt as pt_prompt
 from prompt_toolkit.formatted_text import ANSI
 from prompt_toolkit.shortcuts import print_formatted_text
 from .tools import tools_map, tool_schemas
-from .config import agent_workdir
+from .config import agent_workdir, default_mcp_config_path
 from .skills import SKILLS_DIR, discover_skills, format_skill_index
 from .mcp_runtime import MCPToolRegistry, load_default_mcp_registry
 from .tool_search import (
@@ -199,8 +199,16 @@ def format_session_log(session_id):
     return f"• session {session_id}"
 
 
-def format_loaded_tools_log(count):
-    return f"• loaded {count} MCP tools"
+def format_loaded_tools_log(count, config_path):
+    return f"• loaded {count} MCP tools · config {config_path}"
+
+
+def format_loaded_skills_log(count, skills_dir):
+    return f"• loaded {count} skills · dir {skills_dir}"
+
+
+def format_workdir_log(workdir):
+    return f"• workdir {workdir}"
 
 
 def list_mcp_tools(mcp_registry: MCPToolRegistry | None = None):
@@ -593,13 +601,20 @@ def run(argv=None):
         return
 
     mcp_registry = load_default_mcp_registry()
-    if mcp_registry.tool_schemas:
-        logger.info(format_loaded_tools_log(len(mcp_registry.tool_schemas)))
+    discovered_skills = discover_skills(SKILLS_DIR)
 
     chat_session = start_session(args, mcp_registry, workdir=workdir)
     active_session_id = chat_session.id
     restore_messages(chat_session, mcp_registry, workdir=workdir)
     logger.info(format_session_log(chat_session.id))
+    logger.info(
+        format_loaded_tools_log(
+            len(mcp_registry.tool_schemas),
+            default_mcp_config_path(),
+        )
+    )
+    logger.info(format_loaded_skills_log(len(discovered_skills), SKILLS_DIR))
+    logger.info(format_workdir_log(workdir))
 
     try:
         while True:
