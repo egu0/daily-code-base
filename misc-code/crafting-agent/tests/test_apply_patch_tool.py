@@ -41,6 +41,20 @@ fresh content
     assert "wrote" in result
 
 
+def test_add_file_alias_creates_new_file(tmp_path):
+    path = tmp_path / "hello.txt"
+    patch = f"""*** Begin Patch
+*** Add File: {path}
+hello
+*** End Patch
+"""
+
+    result = apply_patch(patch)
+
+    assert path.read_text(encoding="utf-8") == "hello\n"
+    assert "wrote" in result
+
+
 # -- Update File (V4A diff — the only update format) ---------------------------
 
 def test_update_file_v4a_diff(tmp_path):
@@ -79,6 +93,24 @@ def test_update_file_multiline_context(tmp_path):
     result = apply_patch(patch)
 
     assert path.read_text(encoding="utf-8") == "one\n2\n3\nfour\n"
+    assert "updated" in result
+
+
+def test_update_ignores_text_after_at_at_separator(tmp_path):
+    path = tmp_path / "app.py"
+    path.write_text("def real():\n    return 'old'\n", encoding="utf-8")
+    patch = f"""*** Begin Patch
+*** Update File: {path}
+@@ def imaginary_anchor():
+ def real():
+-    return 'old'
++    return 'new'
+*** End Patch
+"""
+
+    result = apply_patch(patch)
+
+    assert path.read_text(encoding="utf-8") == "def real():\n    return 'new'\n"
     assert "updated" in result
 
 
@@ -164,6 +196,21 @@ def test_delete_rejects_missing_file(tmp_path):
     assert "file not found" in result
 
 
+def test_delete_rejects_directory(tmp_path):
+    path = tmp_path / "dir"
+    path.mkdir()
+    patch = f"""*** Begin Patch
+*** Delete File: {path}
+*** End Patch
+"""
+
+    result = apply_patch(patch)
+
+    assert path.exists()
+    assert "Error:" in result
+    assert "refusing to delete directory" in result
+
+
 # -- Multi-operation atomicity -------------------------------------------------
 
 def test_multi_op_rollback_on_failure(tmp_path):
@@ -210,6 +257,88 @@ def test_multi_op_success_applies_all(tmp_path):
     assert "deleted" in result
 
 
+def test_multiple_patch_envelopes_in_one_call_apply_all(tmp_path):
+    first = tmp_path / "first.txt"
+    second = tmp_path / "second.txt"
+    patch = (
+        f"*** Begin Patch\n"
+        f"*** Write File: {first}\nalpha\n"
+        f"*** End Patch\n"
+        f"*** Begin Patch\n"
+        f"*** Write File: {second}\nbeta\n"
+        f"*** End Patch"
+    )
+
+    result = apply_patch(patch)
+
+    assert first.read_text(encoding="utf-8") == "alpha\n"
+    assert second.read_text(encoding="utf-8") == "beta\n"
+    assert "wrote" in result
+
+
+def test_multiple_patch_envelopes_tolerate_blank_lines(tmp_path):
+    first = tmp_path / "first.txt"
+    second = tmp_path / "second.txt"
+    patch = (
+        f"\n"
+        f"*** Begin Patch\n"
+        f"*** Write File: {first}\nalpha\n"
+        f"*** End Patch\n"
+        f"\n"
+        f"*** Begin Patch\n"
+        f"*** Write File: {second}\nbeta\n"
+        f"*** End Patch\n"
+        f"\n"
+    )
+
+    result = apply_patch(patch)
+
+    assert first.read_text(encoding="utf-8") == "alpha\n"
+    assert second.read_text(encoding="utf-8") == "beta\n"
+    assert "wrote" in result
+
+
+def test_multiple_patch_envelopes_update_same_file_accumulates(tmp_path):
+    path = tmp_path / "sample.txt"
+    path.write_text("a\nb\nc\n", encoding="utf-8")
+    patch = f"""*** Begin Patch
+*** Update File: {path}
+@@ -1 +1 @@
+-a
++A
+*** End Patch
+*** Begin Patch
+*** Update File: {path}
+@@ -2 +2 @@
+-b
++B
+*** End Patch
+"""
+
+    result = apply_patch(patch)
+
+    assert path.read_text(encoding="utf-8") == "A\nB\nc\n"
+    assert "updated" in result
+
+
+def test_multiple_patch_envelopes_remain_atomic(tmp_path):
+    first = tmp_path / "first.txt"
+    missing = tmp_path / "missing.txt"
+    patch = (
+        f"*** Begin Patch\n"
+        f"*** Write File: {first}\nalpha\n"
+        f"*** End Patch\n"
+        f"*** Begin Patch\n"
+        f"*** Delete File: {missing}\n"
+        f"*** End Patch"
+    )
+
+    result = apply_patch(patch)
+
+    assert "Error:" in result
+    assert not first.exists()
+
+
 # -- Schema & registration -----------------------------------------------------
 
 def test_schema_describes_v4a_format():
@@ -219,11 +348,16 @@ def test_schema_describes_v4a_format():
     ]
     assert "V4A" in description
     assert "*** Write File" in description
+    assert "*** Add File" in description
     assert "*** Update File" in description
     assert "*** Delete File" in description
     assert "space (context)" in patch_description
     assert "- (remove)" in patch_description
     assert "+ (add)" in patch_description
+    assert "hunk separator" in patch_description
+    assert "text after @@" in patch_description
+    assert "Multiple patch blocks" in patch_description
+    assert "*** End Patch\n*** Begin Patch" in patch_description
 
 
 def test_apply_patch_tool_is_registered():

@@ -20,7 +20,6 @@ from helloworld.tools.apply_patch.index import (
     PatchOperation,
     apply_patch,
     ensure_trailing_newline,
-    line_text,
     parse_patch,
     parse_update_diff,
     path_from_directive,
@@ -29,28 +28,6 @@ from helloworld.tools.apply_patch.index import (
     updated_text,
     validate_operations,
 )
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-
-class TestLineText:
-    def test_strips_leading_plus(self):
-        assert line_text("+hello") == "hello"
-
-    def test_strips_leading_minus(self):
-        assert line_text("-world") == "world"
-
-    def test_strips_leading_space(self):
-        assert line_text(" unchanged") == "unchanged"
-
-    def test_single_char_returns_empty(self):
-        assert line_text("+") == ""
-
-    def test_empty_string_returns_empty(self):
-        assert line_text("") == ""
-
 
 class TestEnsureTrailingNewline:
     def test_already_ends_with_newline(self):
@@ -124,6 +101,18 @@ class TestParseUpdateDiff:
         assert context == ["unchanged", "old"]
         assert hunks[0].del_lines == ["old"]
         assert hunks[0].ins_lines == ["new"]
+
+    def test_at_sign_header_text_is_not_used_as_anchor(self):
+        sections = parse_update_diff([
+            "@@ def anchor_that_is_not_in_file():",
+            " real context",
+            "-old",
+            "+new",
+        ])
+        assert len(sections) == 1
+        context, hunks = sections[0]
+        assert context == ["real context", "old"]
+        assert hunks == [Hunk(1, ["old"], ["new"])]
 
     def test_pure_addition(self):
         sections = parse_update_diff([
@@ -211,6 +200,14 @@ class TestParsePatch:
         assert ops[0].path == p
         assert ops[0].new_lines == ["hello", "world"]
 
+    def test_add_file_alias_parses_as_write(self, tmp_path):
+        p = tmp_path / "f.txt"
+        ops = parse_patch(f"*** Begin Patch\n*** Add File: {p}\nhello\n*** End Patch")
+        assert len(ops) == 1
+        assert ops[0].kind == "write"
+        assert ops[0].path == p
+        assert ops[0].new_lines == ["hello"]
+
     def test_single_delete(self, tmp_path):
         p = tmp_path / "f.txt"
         ops = parse_patch(f"*** Begin Patch\n*** Delete File: {p}\n*** End Patch")
@@ -246,6 +243,39 @@ class TestParsePatch:
         assert len(ops) == 2
         assert ops[0].kind == "write"
         assert ops[1].kind == "delete"
+
+    def test_multiple_patch_envelopes_are_flattened(self, tmp_path):
+        a = tmp_path / "a.txt"
+        b = tmp_path / "b.txt"
+        ops = parse_patch(
+            f"*** Begin Patch\n"
+            f"*** Write File: {a}\nalpha\n"
+            f"*** End Patch\n"
+            f"*** Begin Patch\n"
+            f"*** Write File: {b}\nbeta\n"
+            f"*** End Patch"
+        )
+        assert len(ops) == 2
+        assert ops[0].path == a
+        assert ops[1].path == b
+
+    def test_multiple_patch_envelopes_allow_blank_lines_between_blocks(self, tmp_path):
+        a = tmp_path / "a.txt"
+        b = tmp_path / "b.txt"
+        ops = parse_patch(
+            f"\n"
+            f"*** Begin Patch\n"
+            f"*** Write File: {a}\nalpha\n"
+            f"*** End Patch\n"
+            f"\n"
+            f"*** Begin Patch\n"
+            f"*** Write File: {b}\nbeta\n"
+            f"*** End Patch\n"
+            f"\n"
+        )
+        assert len(ops) == 2
+        assert ops[0].path == a
+        assert ops[1].path == b
 
     def test_all_three_kinds(self, tmp_path):
         w = tmp_path / "w.txt"
@@ -291,21 +321,46 @@ class TestParsePatchErrors:
 
 class TestPathFromDirective:
     def test_within_workspace(self, monkeypatch, tmp_path):
-        monkeypatch.setenv("APPLY_PATCH_WORKSPACE", str(tmp_path))
+        monkeypatch.setenv("HELLO_AGENT_WORKDIR", str(tmp_path))
         safe = tmp_path / "sub" / "file.txt"
         result = path_from_directive(f"*** Write File: {safe}", "*** Write File: ")
         assert result == safe
 
+    def test_relative_path_resolves_inside_workspace(self, monkeypatch, tmp_path):
+        workspace = tmp_path / "ws"
+        workspace.mkdir()
+        monkeypatch.setenv("HELLO_AGENT_WORKDIR", str(workspace))
+        result = path_from_directive("*** Write File: src/app.py", "*** Write File: ")
+        assert result == workspace / "src" / "app.py"
+
+    def test_uses_hello_agent_workdir_not_apply_patch_workspace(
+        self, monkeypatch, tmp_path
+    ):
+        workspace = tmp_path / "ws"
+        workspace.mkdir()
+        ignored = tmp_path / "ignored"
+        ignored.mkdir()
+        monkeypatch.setenv("HELLO_AGENT_WORKDIR", str(workspace))
+        monkeypatch.setenv("APPLY_PATCH_WORKSPACE", str(ignored))
+
+        result = path_from_directive("*** Update File: app.py", "*** Update File: ")
+
+        assert result == workspace / "app.py"
+
+    def test_missing_path_raises(self):
+        with pytest.raises(ValueError, match="missing path"):
+            path_from_directive("*** Write File:   ", "*** Write File: ")
+
     def test_escapes_workspace_raises(self, monkeypatch, tmp_path):
         workspace = tmp_path / "ws"
         workspace.mkdir()
-        monkeypatch.setenv("APPLY_PATCH_WORKSPACE", str(workspace))
+        monkeypatch.setenv("HELLO_AGENT_WORKDIR", str(workspace))
         outside = tmp_path / "escape.txt"
         with pytest.raises(ValueError, match="path escapes workspace"):
             path_from_directive(f"*** Write File: {outside}", "*** Write File: ")
 
     def test_root_allows_absolute(self, monkeypatch, tmp_path):
-        monkeypatch.setenv("APPLY_PATCH_WORKSPACE", "/")
+        monkeypatch.setenv("HELLO_AGENT_WORKDIR", "/")
         result = path_from_directive(
             f"*** Write File: {tmp_path / 'x.txt'}", "*** Write File: "
         )
@@ -314,7 +369,7 @@ class TestPathFromDirective:
     def test_dot_dot_escape_raises(self, monkeypatch, tmp_path):
         workspace = tmp_path / "ws"
         workspace.mkdir()
-        monkeypatch.setenv("APPLY_PATCH_WORKSPACE", str(workspace))
+        monkeypatch.setenv("HELLO_AGENT_WORKDIR", str(workspace))
         with pytest.raises(ValueError, match="path escapes workspace"):
             path_from_directive(
                 f"*** Update File: {workspace / '..' / 'out.txt'}",
@@ -325,7 +380,7 @@ class TestPathFromDirective:
         workspace = tmp_path / "ws"
         workspace.mkdir()
         (workspace / "sub").mkdir()
-        monkeypatch.setenv("APPLY_PATCH_WORKSPACE", str(workspace))
+        monkeypatch.setenv("HELLO_AGENT_WORKDIR", str(workspace))
         result = path_from_directive(
             f"*** Update File: {workspace / 'sub' / '..' / 'f.txt'}",
             "*** Update File: ",
@@ -366,6 +421,13 @@ class TestValidateOperations:
         p.write_text("x", encoding="utf-8")
         ops = [PatchOperation("delete", p)]
         validate_operations(ops)
+
+    def test_delete_rejects_directory(self, tmp_path):
+        d = tmp_path / "dir"
+        d.mkdir()
+        ops = [PatchOperation("delete", d)]
+        with pytest.raises(ValueError, match="refusing to delete directory"):
+            validate_operations(ops)
 
     def test_update_rejects_missing(self, tmp_path):
         ops = [PatchOperation("update", tmp_path / "nope.txt",
@@ -439,6 +501,37 @@ class TestUpdatedText:
         result = updated_text(op)
         assert result == "unique\ndup\n"
 
+    def test_does_not_mutate_hunk_offsets(self, tmp_path):
+        p = tmp_path / "f.txt"
+        p.write_text("intro\ntarget\n", encoding="utf-8")
+        hunk = Hunk(0, ["target"], ["changed"])
+        op = PatchOperation("update", p, sections=[(["target"], [hunk])])
+
+        result = updated_text(op)
+
+        assert result == "intro\nchanged\n"
+        assert hunk.orig_index == 0
+
+    def test_delete_target_mismatch_raises(self, tmp_path):
+        p = tmp_path / "f.txt"
+        p.write_text("target\n", encoding="utf-8")
+        op = PatchOperation("update", p,
+                            sections=[(["target"], [Hunk(0, ["other"], ["changed"])])])
+        with pytest.raises(ValueError, match="delete target mismatch"):
+            updated_text(op)
+
+    def test_at_sign_header_text_does_not_anchor_update(self, tmp_path):
+        p = tmp_path / "f.txt"
+        p.write_text("real context\nold\n", encoding="utf-8")
+        op = PatchOperation("update", p, sections=parse_update_diff([
+            "@@ non_existent_anchor",
+            " real context",
+            "-old",
+            "+new",
+        ]))
+        result = updated_text(op)
+        assert result == "real context\nnew\n"
+
 
 # ---------------------------------------------------------------------------
 # plan_changes
@@ -477,6 +570,18 @@ class TestPlanChanges:
         changes = plan_changes(ops)
         assert changes[0] == ("write", wp, "hello\n")
         assert changes[1] == ("delete", dp, None)
+
+    def test_multiple_updates_to_same_file_are_accumulated(self, tmp_path):
+        p = tmp_path / "f.txt"
+        p.write_text("a\nb\nc\n", encoding="utf-8")
+        ops = [
+            PatchOperation("update", p, sections=[(["a"], [Hunk(0, ["a"], ["A"])])]),
+            PatchOperation("update", p, sections=[(["b"], [Hunk(0, ["b"], ["B"])])]),
+        ]
+
+        changes = plan_changes(ops)
+
+        assert changes == [("write", p, "A\nB\nc\n")]
 
 
 # ---------------------------------------------------------------------------
