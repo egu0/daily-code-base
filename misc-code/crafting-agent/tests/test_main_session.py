@@ -166,9 +166,15 @@ def test_run_changes_to_agent_workdir(monkeypatch, tmp_path):
     monkeypatch.setattr(
         main,
         "start_session",
-        lambda args, mcp_registry=None: SimpleNamespace(id="sess_test", messages=[]),
+        lambda args, mcp_registry=None, workdir=None: SimpleNamespace(
+            id="sess_test", messages=[]
+        ),
     )
-    monkeypatch.setattr(main, "restore_messages", lambda session, mcp_registry=None: None)
+    monkeypatch.setattr(
+        main,
+        "restore_messages",
+        lambda session, mcp_registry=None, workdir=None: None,
+    )
     monkeypatch.setattr(
         main,
         "prompt_user",
@@ -206,9 +212,15 @@ def test_run_prints_newline_between_streamed_reasoning_and_content(
     monkeypatch.setattr(
         main,
         "start_session",
-        lambda args, mcp_registry=None: SimpleNamespace(id="sess_test", messages=[]),
+        lambda args, mcp_registry=None, workdir=None: SimpleNamespace(
+            id="sess_test", messages=[]
+        ),
     )
-    monkeypatch.setattr(main, "restore_messages", lambda session, mcp_registry=None: None)
+    monkeypatch.setattr(
+        main,
+        "restore_messages",
+        lambda session, mcp_registry=None, workdir=None: None,
+    )
     monkeypatch.setattr(main, "persist_messages", lambda session: None)
     monkeypatch.setattr(main, "record_request", lambda session, payload: tmp_path / "1.json")
     monkeypatch.setattr(main, "record_response", lambda path, response: None)
@@ -279,9 +291,15 @@ def test_run_prints_tool_result_after_tool_execution(monkeypatch, tmp_path, caps
     monkeypatch.setattr(
         main,
         "start_session",
-        lambda args, mcp_registry=None: SimpleNamespace(id="sess_test", messages=[]),
+        lambda args, mcp_registry=None, workdir=None: SimpleNamespace(
+            id="sess_test", messages=[]
+        ),
     )
-    monkeypatch.setattr(main, "restore_messages", lambda session, mcp_registry=None: None)
+    monkeypatch.setattr(
+        main,
+        "restore_messages",
+        lambda session, mcp_registry=None, workdir=None: None,
+    )
     monkeypatch.setattr(main, "persist_messages", lambda session: None)
     monkeypatch.setattr(main, "record_request", lambda session, payload: tmp_path / "1.json")
     monkeypatch.setattr(main, "record_response", lambda path, response: None)
@@ -360,6 +378,45 @@ def test_initial_messages_includes_skill_index_and_read_skill_instruction(
     assert "name: playwright-skill" in system_message
     assert "description: Complete browser automation with Playwright." in system_message
     assert "Use the read_skill tool" in system_message
+
+
+def test_initial_messages_includes_agent_workdir(monkeypatch, tmp_path):
+    workdir = tmp_path / "project"
+    workdir.mkdir()
+    monkeypatch.setattr(main, "agent_workdir", lambda path=None: workdir)
+
+    system_message = main.initial_messages()[0]["content"]
+
+    assert "Current project directory:" in system_message
+    assert str(workdir) in system_message
+    assert "If a file path is relative, resolve it from this directory" in system_message
+
+
+def test_start_session_creates_system_message_with_workdir(monkeypatch, tmp_path):
+    workdir = tmp_path / "project"
+    workdir.mkdir()
+    monkeypatch.setattr(main, "agent_workdir", lambda path=None: workdir)
+    monkeypatch.setattr(
+        main,
+        "create_session",
+        lambda messages, session_id=None: SimpleNamespace(
+            id=session_id or "sess_test",
+            messages=messages,
+        ),
+    )
+
+    session = main.start_session(
+        SimpleNamespace(
+            list_skills=False,
+            list_sessions=False,
+            resume_latest=False,
+            session=None,
+        ),
+        mcp_registry=None,
+        workdir=workdir,
+    )
+
+    assert str(workdir) in session.messages[0]["content"]
 
 
 def test_initial_messages_omits_mcp_tool_section_without_mcp_tools(

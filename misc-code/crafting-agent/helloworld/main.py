@@ -55,9 +55,18 @@ client = OpenAI(base_url="https://api.deepseek.com/", api_key=os.getenv("DEEPSEE
 MODEL = "deepseek-v4-pro"
 
 
-def initial_messages(mcp_registry: MCPToolRegistry | None = None):
+def initial_messages(
+    mcp_registry: MCPToolRegistry | None = None,
+    workdir: str | os.PathLike | None = None,
+):
     skill_index = format_skill_index(discover_skills(SKILLS_DIR))
-    content = f"You are a helpful assitant."
+    current_workdir = agent_workdir(workdir)
+    content = (
+        "You are a helpful assitant.\n\n"
+        f"Current project directory: {current_workdir}\n"
+        "If a file path is relative, resolve it from this directory. "
+        "When the user refers to the current project, assume this directory."
+    )
     mcp_tool_index = format_mcp_tool_index(mcp_registry)
     if mcp_tool_index:
         content = f"{content}\n\n{mcp_tool_index}"
@@ -112,7 +121,11 @@ def parse_args(argv=None):
     return parser.parse_args(argv)
 
 
-def start_session(args, mcp_registry: MCPToolRegistry | None = None) -> ChatSession:
+def start_session(
+    args,
+    mcp_registry: MCPToolRegistry | None = None,
+    workdir: str | os.PathLike | None = None,
+) -> ChatSession:
     if args.list_skills:
         for index, skill in enumerate(discover_skills(SKILLS_DIR)):
             if index:
@@ -137,19 +150,26 @@ def start_session(args, mcp_registry: MCPToolRegistry | None = None) -> ChatSess
         session = latest_session()
         if session:
             return session
-        return create_session(initial_messages(mcp_registry))
+        return create_session(initial_messages(mcp_registry, workdir=workdir))
 
     if args.session:
         session = load_session(args.session)
         if session:
             return session
-        return create_session(initial_messages(mcp_registry), session_id=args.session)
+        return create_session(
+            initial_messages(mcp_registry, workdir=workdir),
+            session_id=args.session,
+        )
 
-    return create_session(initial_messages(mcp_registry))
+    return create_session(initial_messages(mcp_registry, workdir=workdir))
 
 
-def restore_messages(session: ChatSession, mcp_registry: MCPToolRegistry | None = None):
-    messages[:] = session.messages or initial_messages(mcp_registry)
+def restore_messages(
+    session: ChatSession,
+    mcp_registry: MCPToolRegistry | None = None,
+    workdir: str | os.PathLike | None = None,
+):
+    messages[:] = session.messages or initial_messages(mcp_registry, workdir=workdir)
 
 
 def persist_messages(session: ChatSession):
@@ -523,7 +543,8 @@ def prompt_user(input_fn=None) -> str:
 
 def run(argv=None):
     args = parse_args(argv)
-    os.chdir(agent_workdir(args.workdir))
+    workdir = agent_workdir(args.workdir)
+    os.chdir(workdir)
     if args.list_sessions or args.list_skills:
         start_session(args)
         return
@@ -542,8 +563,8 @@ def run(argv=None):
     if mcp_registry.tool_schemas:
         logger.info(format_loaded_tools_log(len(mcp_registry.tool_schemas)))
 
-    chat_session = start_session(args, mcp_registry)
-    restore_messages(chat_session, mcp_registry)
+    chat_session = start_session(args, mcp_registry, workdir=workdir)
+    restore_messages(chat_session, mcp_registry, workdir=workdir)
     logger.info(format_session_log(chat_session.id))
 
     try:
