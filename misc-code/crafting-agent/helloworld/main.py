@@ -264,6 +264,10 @@ def format_tool_log(name, displayed_args):
     return f"→ tool {name}({displayed_args})"
 
 
+def format_tool_result_display(name, result):
+    return f"[tool] {name} result:\n{result}"
+
+
 def format_tool_args(args, tool_name=None):
     displayed = []
     for key, value in args.items():
@@ -642,6 +646,7 @@ def run(argv=None):
                     )
 
                     result = execute_tool_with_approval(name, args, mcp_registry)
+                    print(format_tool_result_display(name, result))
 
                     messages.append(
                         {"role": "tool", "tool_call_id": tc.id, "content": str(result)}

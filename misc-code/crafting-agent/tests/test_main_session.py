@@ -240,6 +240,80 @@ def test_run_prints_newline_between_streamed_reasoning_and_content(
     assert "No tools needed.\033[0mAgent:" not in output
 
 
+def test_run_prints_tool_result_after_tool_execution(monkeypatch, tmp_path, capsys):
+    prompts = iter(["read it"])
+    streams = iter(
+        [
+            [
+                chunk(
+                    SimpleNamespace(
+                        role="assistant",
+                        tool_calls=[
+                            SimpleNamespace(
+                                index=0,
+                                id="call_1",
+                                type="function",
+                                function=SimpleNamespace(
+                                    name="read", arguments='{"path":"README.md"}'
+                                ),
+                            )
+                        ],
+                    ),
+                    finish_reason="tool_calls",
+                )
+            ],
+            [
+                chunk(
+                    SimpleNamespace(role="assistant", content="Done."),
+                    finish_reason="stop",
+                )
+            ],
+        ]
+    )
+
+    monkeypatch.setattr(
+        main,
+        "load_default_mcp_registry",
+        lambda: SimpleNamespace(tool_schemas=[], close=lambda: None),
+    )
+    monkeypatch.setattr(
+        main,
+        "start_session",
+        lambda args, mcp_registry=None: SimpleNamespace(id="sess_test", messages=[]),
+    )
+    monkeypatch.setattr(main, "restore_messages", lambda session, mcp_registry=None: None)
+    monkeypatch.setattr(main, "persist_messages", lambda session: None)
+    monkeypatch.setattr(main, "record_request", lambda session, payload: tmp_path / "1.json")
+    monkeypatch.setattr(main, "record_response", lambda path, response: None)
+    monkeypatch.setattr(main, "close_process_manager", lambda: None)
+    monkeypatch.setattr(main, "agent_workdir", lambda path=None: tmp_path)
+    monkeypatch.setattr(main, "execute_tool_with_approval", lambda *args: "README text")
+    monkeypatch.setattr(
+        main,
+        "client",
+        SimpleNamespace(
+            chat=SimpleNamespace(
+                completions=SimpleNamespace(create=lambda **kwargs: next(streams))
+            )
+        ),
+    )
+
+    def prompt_once():
+        try:
+            return next(prompts)
+        except StopIteration:
+            raise RuntimeError("stop loop")
+
+    monkeypatch.setattr(main, "prompt_user", prompt_once)
+
+    with pytest.raises(RuntimeError, match="stop loop"):
+        main.run([])
+
+    output = capsys.readouterr().out
+    assert "[tool] read result:" in output
+    assert "README text" in output
+
+
 def test_discover_skills_reads_name_and_description_from_skill_markdown(tmp_path):
     skill_dir = tmp_path / "skills" / "frontend-design"
     skill_dir.mkdir(parents=True)
