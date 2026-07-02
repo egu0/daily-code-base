@@ -15,7 +15,10 @@ uv run --with jupyter jupyter lab
 Add this to `~/.zshrc` to make `hgent` available everywhere:
 
 ```zsh
-# copy .env.example to .env, then fill needed api keys.
+export DEEPSEEK_API_KEY='sk-' # https://platform.deepseek.com/api_keys
+export TAVILY_API_KEY='tvly-' # https://app.tavily.com/home
+export TAVILY_AUTH_HEADER='Bearer tvly-'
+
 export HELLO_AGENT_HOME="$HOME/.hello-agent"
 hgent() {
   local hgent_cwd="$PWD"
@@ -120,7 +123,7 @@ Prefer the object form:
       "name": "tavily-mcp",
       "server_url": "https://mcp.tavily.com/mcp/",
       "headers": {
-        "Authorization": "${TAVILY_API_KEY}"
+        "Authorization": "${TAVILY_AUTH_HEADER}"
       },
       "allowed_tools": ["tavily_search", "tavily_extract"]
     },

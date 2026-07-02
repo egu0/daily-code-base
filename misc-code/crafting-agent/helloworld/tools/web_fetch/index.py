@@ -9,9 +9,9 @@ MAX_CONTENT_LENGTH = 3000
 
 
 def web_fetch(urls, max_chars=MAX_CONTENT_LENGTH):
-    api_key = os.environ.get("TAVILY_KEY", "")
+    api_key = os.environ.get("TAVILY_API_KEY", "")
     if not api_key:
-        return "Error: TAVILY_KEY environment variable is not set"
+        return "Error: TAVILY_API_KEY environment variable is not set"
 
     if isinstance(urls, str):
         urls = [urls]

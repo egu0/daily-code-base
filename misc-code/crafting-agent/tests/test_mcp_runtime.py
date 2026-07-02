@@ -126,7 +126,7 @@ def test_load_mcp_configs_defaults_missing_type_to_mcp(tmp_path):
 
 
 def test_load_mcp_configs_expands_env_placeholders(monkeypatch, tmp_path):
-    monkeypatch.setenv("TAVILY_KEY", "test-key")
+    monkeypatch.setenv("TAVILY_API_KEY", "test-key")
     config_path = tmp_path / "mcp.json"
     config_path.write_text(
         json.dumps(
@@ -136,7 +136,7 @@ def test_load_mcp_configs_expands_env_placeholders(monkeypatch, tmp_path):
                         "type": "mcp",
                         "name": "tavily",
                         "command": "npx",
-                        "env": {"TAVILY_API_KEY": "${TAVILY_KEY}"},
+                        "env": {"TAVILY_API_KEY": "${TAVILY_API_KEY}"},
                     }
                 ]
             }

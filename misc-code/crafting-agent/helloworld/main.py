@@ -52,7 +52,9 @@ load_dotenv()
 
 models_context_ = {"deepseek-v4-flash": 1000_000, "deepseek-v4-pro": 1000_000}
 
-client = OpenAI(base_url="https://api.deepseek.com/", api_key=os.getenv("DEEPSEEK_KEY"))
+client = OpenAI(
+    base_url="https://api.deepseek.com/", api_key=os.getenv("DEEPSEEK_API_KEY")
+)
 MODEL = "deepseek-v4-pro"
 active_session_id = None
 

@@ -1,9 +1,8 @@
 .venv
-.kilo
+.claude
 .ruff_cache
 **/__pycache__
 .DS_Store
-.env
 .ipynb_checkpoints/
 helloworld/data/
 helloworld/sessions/

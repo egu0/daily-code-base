@@ -7,9 +7,9 @@ enabled = False
 
 
 def web_search(query):
-    api_key = os.environ.get("TAVILY_KEY", "")
+    api_key = os.environ.get("TAVILY_API_KEY", "")
     if not api_key:
-        return "Error: TAVILY_KEY environment variable is not set"
+        return "Error: TAVILY_API_KEY environment variable is not set"
 
     body = {
         "query": query,
