@@ -7,7 +7,7 @@ from typing import Any, Callable
 from aisuite.mcp import MCPClient
 from loguru import logger
 
-from .config import MCP_CONFIG_ENV, default_mcp_config_path
+from .config import MCP_CONFIG_ENV, default_mcp_config_path, resolve_mcp_config_path
 
 DEFAULT_MCP_CONFIG_PATH = default_mcp_config_path()
 ENV_PATTERN = re.compile(r"^\$\{([A-Za-z_][A-Za-z0-9_]*)\}$")
@@ -38,9 +38,7 @@ def _normalize_mcp_configs(configs: list[dict[str, Any]]) -> list[dict[str, Any]
 
 
 def load_mcp_configs(path: str | Path | None = None) -> list[dict[str, Any]]:
-    config_path = Path(path) if path is not None else Path(
-        os.environ.get(MCP_CONFIG_ENV, default_mcp_config_path())
-    )
+    config_path = Path(path) if path is not None else resolve_mcp_config_path()
     if not config_path.exists():
         return []
 

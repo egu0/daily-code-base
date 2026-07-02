@@ -9,8 +9,8 @@ from prompt_toolkit import prompt as pt_prompt
 from prompt_toolkit.formatted_text import ANSI
 from prompt_toolkit.shortcuts import print_formatted_text
 from .tools import tools_map, tool_schemas
-from .config import agent_workdir, default_mcp_config_path
-from .skills import SKILLS_DIR, discover_skills, format_skill_index
+from .config import agent_workdir, resolve_mcp_config_path, resolve_skills_dir
+from .skills import discover_skills, format_skill_index
 from .mcp_runtime import MCPToolRegistry, load_default_mcp_registry
 from .tool_search import (
     MCPToolSearchRouter,
@@ -61,8 +61,9 @@ def initial_messages(
     mcp_registry: MCPToolRegistry | None = None,
     workdir: str | os.PathLike | None = None,
 ):
-    skill_index = format_skill_index(discover_skills(SKILLS_DIR))
     current_workdir = agent_workdir(workdir)
+    skills_dir = resolve_skills_dir(current_workdir)
+    skill_index = format_skill_index(discover_skills(skills_dir))
     content = (
         "You are a helpful assitant.\n\n"
         f"Current project directory: {current_workdir}\n"
@@ -129,7 +130,7 @@ def start_session(
     workdir: str | os.PathLike | None = None,
 ) -> ChatSession:
     if args.list_skills:
-        for index, skill in enumerate(discover_skills(SKILLS_DIR)):
+        for index, skill in enumerate(discover_skills(resolve_skills_dir(workdir))):
             if index:
                 print()
             print(f"name: {skill.name}")
@@ -601,7 +602,8 @@ def run(argv=None):
         return
 
     mcp_registry = load_default_mcp_registry()
-    discovered_skills = discover_skills(SKILLS_DIR)
+    skills_dir = resolve_skills_dir(workdir)
+    discovered_skills = discover_skills(skills_dir)
 
     chat_session = start_session(args, mcp_registry, workdir=workdir)
     active_session_id = chat_session.id
@@ -610,10 +612,10 @@ def run(argv=None):
     logger.info(
         format_loaded_tools_log(
             len(mcp_registry.tool_schemas),
-            default_mcp_config_path(),
+            resolve_mcp_config_path(workdir),
         )
     )
-    logger.info(format_loaded_skills_log(len(discovered_skills), SKILLS_DIR))
+    logger.info(format_loaded_skills_log(len(discovered_skills), skills_dir))
     logger.info(format_workdir_log(workdir))
 
     try:

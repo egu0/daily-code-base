@@ -125,7 +125,7 @@ def test_list_skills_prints_multiline_skill_blocks(monkeypatch, tmp_path, capsys
         "---\n" "name: weather\n" "description: Weather planning guidance.\n" "---\n",
         encoding="utf-8",
     )
-    monkeypatch.setattr(main, "SKILLS_DIR", skills_root)
+    monkeypatch.setattr(main, "resolve_skills_dir", lambda workdir=None: skills_root)
 
     with pytest.raises(SystemExit) as exc:
         main.start_session(main.parse_args(["--list-skills"]))
@@ -202,8 +202,10 @@ def test_run_logs_startup_summary_in_order(monkeypatch, tmp_path):
         "load_default_mcp_registry",
         lambda: SimpleNamespace(tool_schemas=[{}, {}, {}], close=lambda: None),
     )
-    monkeypatch.setattr(main, "SKILLS_DIR", skills_dir)
-    monkeypatch.setattr(main, "default_mcp_config_path", lambda: mcp_config_path)
+    monkeypatch.setattr(main, "resolve_skills_dir", lambda workdir=None: skills_dir)
+    monkeypatch.setattr(
+        main, "resolve_mcp_config_path", lambda workdir=None: mcp_config_path
+    )
     monkeypatch.setattr(
         main,
         "discover_skills",
@@ -509,7 +511,9 @@ def test_initial_messages_includes_skill_index_and_read_skill_instruction(
         "# Playwright\n",
         encoding="utf-8",
     )
-    monkeypatch.setattr(main, "SKILLS_DIR", tmp_path / "skills")
+    monkeypatch.setattr(
+        main, "resolve_skills_dir", lambda workdir=None: tmp_path / "skills"
+    )
 
     system_message = main.initial_messages()[0]["content"]
 
@@ -517,6 +521,28 @@ def test_initial_messages_includes_skill_index_and_read_skill_instruction(
     assert "name: playwright-skill" in system_message
     assert "description: Complete browser automation with Playwright." in system_message
     assert "Use the read_skill tool" in system_message
+
+
+def test_initial_messages_uses_project_skills_dir(monkeypatch, tmp_path):
+    workdir = tmp_path / "project"
+    skill_dir = workdir / ".hello-agent" / "skills" / "project-skill"
+    skill_dir.mkdir(parents=True)
+    skill_file = skill_dir / "SKILL.md"
+    skill_file.write_text(
+        "---\n"
+        "name: project-skill\n"
+        "description: Project-local instructions.\n"
+        "---\n"
+        "# Project Skill\n",
+        encoding="utf-8",
+    )
+    monkeypatch.delenv("HELLO_AGENT_SKILLS_DIR", raising=False)
+    monkeypatch.setenv("HELLO_AGENT_HOME", str(tmp_path / "global-agent"))
+
+    system_message = main.initial_messages(workdir=workdir)[0]["content"]
+
+    assert "name: project-skill" in system_message
+    assert f"path: {skill_file.resolve()}" in system_message
 
 
 def test_initial_messages_includes_agent_workdir(monkeypatch, tmp_path):
@@ -563,7 +589,9 @@ def test_start_session_creates_system_message_with_workdir(monkeypatch, tmp_path
 def test_initial_messages_omits_mcp_tool_section_without_mcp_tools(
     monkeypatch, tmp_path
 ):
-    monkeypatch.setattr(main, "SKILLS_DIR", tmp_path / "skills")
+    monkeypatch.setattr(
+        main, "resolve_skills_dir", lambda workdir=None: tmp_path / "skills"
+    )
 
     system_message = main.initial_messages()[0]["content"]
 
@@ -573,7 +601,9 @@ def test_initial_messages_omits_mcp_tool_section_without_mcp_tools(
 def test_initial_messages_includes_mcp_tool_names_and_descriptions(
     monkeypatch, tmp_path
 ):
-    monkeypatch.setattr(main, "SKILLS_DIR", tmp_path / "skills")
+    monkeypatch.setattr(
+        main, "resolve_skills_dir", lambda workdir=None: tmp_path / "skills"
+    )
     mcp_registry = SimpleNamespace(
         tool_schemas=[
             {

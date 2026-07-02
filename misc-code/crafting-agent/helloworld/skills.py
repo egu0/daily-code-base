@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from pathlib import Path
 
-from .config import default_skills_dir
+from .config import default_skills_dir, resolve_skills_dir
 
 SKILLS_DIR = default_skills_dir()
 SKILL_FILE_NAME = "SKILL.md"
@@ -36,8 +36,8 @@ def parse_skill_metadata(text: str) -> dict[str, str]:
     return metadata
 
 
-def discover_skills(skills_dir: Path | str = SKILLS_DIR) -> list[Skill]:
-    root = Path(skills_dir)
+def discover_skills(skills_dir: Path | str | None = None) -> list[Skill]:
+    root = Path(skills_dir) if skills_dir is not None else resolve_skills_dir()
     if not root.exists() or not root.is_dir():
         return []
 
@@ -65,7 +65,7 @@ def discover_skills(skills_dir: Path | str = SKILLS_DIR) -> list[Skill]:
     return discovered
 
 
-def read_skill(name: str, skills_dir: Path | str = SKILLS_DIR) -> dict[str, str]:
+def read_skill(name: str, skills_dir: Path | str | None = None) -> dict[str, str]:
     for skill in discover_skills(skills_dir):
         if skill.name != name:
             continue

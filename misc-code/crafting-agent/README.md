@@ -60,14 +60,19 @@ Environment overrides:
 | ------------------------ | ------------------------------------------------------------------- |
 | `HELLO_AGENT_HOME`       | Base directory for global agent data. Defaults to `~/.hello-agent`. |
 | `HELLO_AGENT_WORKDIR`    | Tool working directory when `--workdir` is not provided.            |
-| `HELLO_AGENT_SKILLS_DIR` | Skills directory. Defaults to `$HELLO_AGENT_HOME/skills`.           |
-| `HELLOWORLD_MCP_CONFIG`  | MCP config file. Defaults to `$HELLO_AGENT_HOME/mcp_config.json`.   |
+| `HELLO_AGENT_SKILLS_DIR` | Explicit skills directory. Overrides project and global skills.     |
+| `HELLOWORLD_MCP_CONFIG`  | Explicit MCP config file. Overrides project and global config.      |
 | `HELLOWORLD_SESSION_DIR` | Session data directory. Defaults to `$HELLO_AGENT_HOME/sessions`.   |
 
 ### Skills
 
-Skills are loaded from `~/.hello-agent/skills` by default. Each skill must live
-in its own directory and contain a `SKILL.md` file:
+Skills are loaded from the first available directory in this order:
+
+1. `HELLO_AGENT_SKILLS_DIR`
+2. `<workdir>/.hello-agent/skills`
+3. `~/.hello-agent/skills`
+
+Each skill must live in its own directory and contain a `SKILL.md` file:
 
 ```text
 ~/.hello-agent/skills/
@@ -99,9 +104,14 @@ Use this skill when the user asks about forecasts, conditions, or weather plans.
 
 ### MCP servers
 
-MCP servers are loaded from `~/.hello-agent/mcp_config.json` by default. The file
-can be either a top-level list or an object with a `servers` list. Prefer the
-object form:
+MCP servers are loaded from the first available config in this order:
+
+1. `HELLOWORLD_MCP_CONFIG`
+2. `<workdir>/.hello-agent/mcp_config.json`
+3. `~/.hello-agent/mcp_config.json`
+
+The file can be either a top-level list or an object with a `servers` list.
+Prefer the object form:
 
 ```json
 {
